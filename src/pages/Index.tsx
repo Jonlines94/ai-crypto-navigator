@@ -19,10 +19,22 @@ const Index = () => {
   const { coins, loading: coinsLoading, lastUpdated } = useCryptoData(30000);
   const { predictions, loading: aiLoading, error: aiError, generatePredictions } = useAiPredictions();
   const { balances, accountValue, loading: balancesLoading, fetchBalances, executeOrder, fetchAllTickers } = useBinance();
+  const handleAutoClose = useCallback((trade: any) => {
+    // settings not available here yet, check trade.paper instead
+    if (!trade.paper) {
+      const closeSide = trade.side === "BUY" ? "SELL" : "BUY";
+      executeOrder({ symbol: trade.symbol, side: closeSide as "BUY" | "SELL", type: "MARKET", quantity: trade.quantity, maxTradeUsd: 10000 })
+        .then(() => toast.success(`🎯 Auto-closed ${trade.symbol}: ${trade.pnl >= 0 ? "Profit" : "Loss"} $${Math.abs(trade.pnl).toFixed(2)}`))
+        .catch((err) => toast.error(`Failed to auto-close ${trade.symbol}: ${err.message}`));
+    } else {
+      toast.info(`🎯 Paper trade auto-closed ${trade.symbol}: ${trade.pnl >= 0 ? "+" : ""}$${trade.pnl.toFixed(2)}`);
+    }
+  }, [executeOrder]);
+
   const {
     signals, activeTrades, marketOutlook, loading: signalsLoading, error: signalsError,
-    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade,
-  } = useTradeSignals();
+    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade, getMaxTradeAmount,
+  } = useTradeSignals(handleAutoClose);
 
   const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
 

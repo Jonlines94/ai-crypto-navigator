@@ -84,8 +84,8 @@ const TradingDashboard = ({
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {settings.mode === "live"
-                ? `Max $${settings.maxTradeUsd}/trade · ${settings.stopLossPct}% stop-loss · Approval ${settings.requireApproval ? "required" : "auto"}`
-                : "No real money at risk. Switch to live when ready."}
+                ? `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · ${settings.stopLossPct}% SL · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
+                : `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`}
             </p>
           </div>
         </div>
@@ -117,7 +117,7 @@ const TradingDashboard = ({
             className="bg-card border border-border rounded-xl p-5 space-y-4 overflow-hidden"
           >
             <h3 className="text-sm font-semibold text-foreground">Trading Settings</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Mode</label>
                 <select
@@ -130,15 +130,30 @@ const TradingDashboard = ({
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Trade (USD)</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (USD)</label>
                 <input
                   type="number"
                   value={settings.maxTradeUsd}
                   onChange={(e) => onUpdateSettings({ maxTradeUsd: Number(e.target.value) })}
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
-                  min={10}
+                  min={5}
                   max={10000}
                 />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (%)</label>
+                <input
+                  type="number"
+                  value={settings.maxTradePercent}
+                  onChange={(e) => onUpdateSettings({ maxTradePercent: Number(e.target.value) })}
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
+                  min={1}
+                  max={50}
+                  step={1}
+                />
+                <span className="text-[9px] text-muted-foreground mt-0.5 block">
+                  e.g. $300 balance × {settings.maxTradePercent}% = ${(300 * settings.maxTradePercent / 100).toFixed(0)} max
+                </span>
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Risk Level</label>
@@ -175,6 +190,18 @@ const TradingDashboard = ({
               />
               <label htmlFor="require-approval" className="text-xs text-foreground">
                 Require manual approval before executing trades
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={settings.autoCloseOnTarget}
+                onChange={(e) => onUpdateSettings({ autoCloseOnTarget: e.target.checked })}
+                className="rounded"
+                id="auto-close"
+              />
+              <label htmlFor="auto-close" className="text-xs text-foreground">
+                Auto-close trades when stop-loss or take-profit is hit
               </label>
             </div>
             {settings.mode === "live" && !settings.requireApproval && (
