@@ -31,6 +31,7 @@ const TradingDashboard = ({
   error,
   settings,
   tradeHistory = [],
+  accountValue = null,
   balances = [],
   balancesLoading,
   onGenerateSignals,
