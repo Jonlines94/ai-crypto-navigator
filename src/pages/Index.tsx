@@ -134,6 +134,7 @@ const Index = () => {
 
       const pending = signalsRef.current.filter(s => s.status === "pending");
       if (pending.length > 0) {
+        console.log(`[Bot] Processing ${pending.length} pending signals`);
         for (const signal of pending) {
           if (signal.confidence >= 60) {
             await handleApprove(signal);
@@ -141,9 +142,20 @@ const Index = () => {
             handleReject(signal.id);
           }
         }
-      }
-      if (pending.length === 0 && !signalsLoadingRef.current && coins.length > 0) {
-        generateSignals(coins, balances, accountValueRef.current?.totalUsd);
+      } else if (!signalsLoadingRef.current && coins.length > 0) {
+        console.log("[Bot] No pending signals, generating new ones...");
+        await generateSignals(coins, balances, accountValueRef.current?.totalUsd);
+        // Wait a tick for state to update, then process the new signals
+        await new Promise(r => setTimeout(r, 500));
+        const newPending = signalsRef.current.filter(s => s.status === "pending");
+        console.log(`[Bot] Generated ${newPending.length} new signals`);
+        for (const signal of newPending) {
+          if (signal.confidence >= 60) {
+            await handleApprove(signal);
+          } else {
+            handleReject(signal.id);
+          }
+        }
       }
     };
 
