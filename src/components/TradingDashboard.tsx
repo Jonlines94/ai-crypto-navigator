@@ -50,6 +50,7 @@ const TradingDashboard = ({
   onCloseTrade,
   botActive,
   onToggleBot,
+  onClearData,
 }: TradingDashboardProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
