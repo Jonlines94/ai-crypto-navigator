@@ -552,6 +552,55 @@ const TradingDashboard = ({
         </div>
       )}
 
+      {/* Cumulative P&L Chart */}
+      {pnlChartData.length >= 2 && (
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              Cumulative P&L
+            </h3>
+            <span className={`text-lg font-bold font-mono ${totalCumulativePnl >= 0 ? "text-gain" : "text-loss"}`}>
+              {totalCumulativePnl >= 0 ? "+" : ""}${totalCumulativePnl.toFixed(2)}
+            </span>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={pnlChartData}>
+                <defs>
+                  <linearGradient id="pnlGradientPos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--gain))" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="hsl(var(--gain))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="pnlGradientNeg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--loss))" stopOpacity={0} />
+                    <stop offset="100%" stopColor="hsl(var(--loss))" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} width={50} />
+                <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                  formatter={(value: number, _: string, props: any) => [
+                    `$${value.toFixed(2)}`,
+                    `Cumulative (${props.payload.trade}: ${props.payload.tradePnl >= 0 ? "+" : ""}$${props.payload.tradePnl.toFixed(2)})`,
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="pnl"
+                  stroke={totalCumulativePnl >= 0 ? "hsl(var(--gain))" : "hsl(var(--loss))"}
+                  strokeWidth={2}
+                  fill={totalCumulativePnl >= 0 ? "url(#pnlGradientPos)" : "url(#pnlGradientNeg)"}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Trade History */}
       <AnimatePresence>
         {showHistory && (
