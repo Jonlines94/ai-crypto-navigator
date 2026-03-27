@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import {
   Bot, Shield, ShieldAlert, TrendingUp, TrendingDown, Check, X,
   Play, Loader2, AlertTriangle, DollarSign, Settings, History,
-  XCircle, ArrowUpRight, ArrowDownRight, Power,
+  XCircle, ArrowUpRight, ArrowDownRight, Power, Trash2,
 } from "lucide-react";
 import type { TradeSignal, TradingSettings, ActiveTrade } from "@/hooks/useTradeSignals";
 import type { BinanceBalance, AccountValue } from "@/hooks/useBinance";
@@ -28,6 +28,7 @@ interface TradingDashboardProps {
   onCloseTrade: (tradeId: string) => void;
   botActive: boolean;
   onToggleBot: () => void;
+  onClearData: () => void;
 }
 
 const TradingDashboard = ({
@@ -49,6 +50,7 @@ const TradingDashboard = ({
   onCloseTrade,
   botActive,
   onToggleBot,
+  onClearData,
 }: TradingDashboardProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -107,8 +109,8 @@ const TradingDashboard = ({
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {settings.mode === "live"
-                ? `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · ${settings.stopLossPct}% SL · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
-                : `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`}
+                ? `Balance $${settings.accountBalance} · ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}% · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
+                : `Balance $${settings.accountBalance} · ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}%`}
             </p>
           </div>
         </div>
@@ -127,6 +129,13 @@ const TradingDashboard = ({
             {botActive
               ? settings.mode === "live" ? "⚡ Bot Live" : "Bot Active"
               : "Activate Bot"}
+          </button>
+          <button
+            onClick={onClearData}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-loss transition-colors px-3 py-1.5 rounded-lg bg-secondary/50 hover:bg-loss/10"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Clear
           </button>
           <button
             onClick={() => setShowHistory(!showHistory)}
@@ -168,18 +177,18 @@ const TradingDashboard = ({
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (USD)</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Account Balance (USD)</label>
                 <input
                   type="number"
-                  value={settings.maxTradeUsd}
-                  onChange={(e) => onUpdateSettings({ maxTradeUsd: Number(e.target.value) })}
+                  value={settings.accountBalance}
+                  onChange={(e) => onUpdateSettings({ accountBalance: Number(e.target.value) })}
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
-                  min={5}
-                  max={10000}
+                  min={1}
+                  max={1000000}
                 />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (%)</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Per Trade (%)</label>
                 <input
                   type="number"
                   value={settings.maxTradePercent}
@@ -190,7 +199,7 @@ const TradingDashboard = ({
                   step={1}
                 />
                 <span className="text-[9px] text-muted-foreground mt-0.5 block">
-                  e.g. $300 balance × {settings.maxTradePercent}% = ${(300 * settings.maxTradePercent / 100).toFixed(0)} max
+                  ${settings.accountBalance} × {settings.maxTradePercent}% = ${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)} max/trade
                 </span>
               </div>
               <div>
@@ -214,6 +223,18 @@ const TradingDashboard = ({
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
                   min={1}
                   max={20}
+                  step={0.5}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Take Profit %</label>
+                <input
+                  type="number"
+                  value={settings.takeProfitPct}
+                  onChange={(e) => onUpdateSettings({ takeProfitPct: Number(e.target.value) })}
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
+                  min={1}
+                  max={50}
                   step={0.5}
                 />
               </div>

@@ -38,20 +38,22 @@ export interface ActiveTrade {
 
 export interface TradingSettings {
   mode: "paper" | "live";
-  maxTradeUsd: number;
+  accountBalance: number;
   maxTradePercent: number;
   riskLevel: "conservative" | "medium" | "aggressive";
   stopLossPct: number;
+  takeProfitPct: number;
   requireApproval: boolean;
   autoCloseOnTarget: boolean;
 }
 
 const DEFAULT_SETTINGS: TradingSettings = {
   mode: "paper",
-  maxTradeUsd: 100,
+  accountBalance: 300,
   maxTradePercent: 10,
   riskLevel: "medium",
   stopLossPct: 5,
+  takeProfitPct: 10,
   requireApproval: true,
   autoCloseOnTarget: true,
 };
@@ -220,10 +222,11 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
           portfolio: portfolio.length > 0 ? portfolio : undefined,
           activeTrades: activeTrades.length > 0 ? activeTrades : undefined,
           settings: {
-            maxTradeUsd: settings.maxTradeUsd,
+            maxTradeUsd: settings.accountBalance * (settings.maxTradePercent / 100),
             riskLevel: settings.riskLevel,
             stopLossPct: settings.stopLossPct,
-            totalBalanceUsd: totalBalanceUsd || 0,
+            takeProfitPct: settings.takeProfitPct,
+            totalBalanceUsd: totalBalanceUsd || settings.accountBalance,
           },
         },
       });
@@ -268,10 +271,18 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     closeTradeInternal(tradeId, "Closed manually");
   }, [closeTradeInternal]);
 
-  const getMaxTradeAmount = useCallback((accountBalance: number) => {
-    const fromPercent = accountBalance * (settings.maxTradePercent / 100);
-    return Math.min(fromPercent, settings.maxTradeUsd);
-  }, [settings.maxTradePercent, settings.maxTradeUsd]);
+  const getMaxTradeAmount = useCallback(() => {
+    return settings.accountBalance * (settings.maxTradePercent / 100);
+  }, [settings.maxTradePercent, settings.accountBalance]);
+
+  const clearAllData = useCallback(() => {
+    setSignals([]);
+    setActiveTrades([]);
+    setTradeHistory([]);
+    setMarketOutlook("");
+    localStorage.removeItem("active-trades");
+    localStorage.removeItem("trade-history");
+  }, []);
 
   const updateSignalStatus = useCallback((id: string, status: TradeSignal["status"], result?: any) => {
     setSignals((prev) => {
@@ -306,5 +317,6 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     openTrade,
     closeTrade,
     getMaxTradeAmount,
+    clearAllData,
   };
 }

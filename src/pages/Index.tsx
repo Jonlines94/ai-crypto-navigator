@@ -33,7 +33,7 @@ const Index = () => {
 
   const {
     signals, activeTrades, marketOutlook, loading: signalsLoading, error: signalsError,
-    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade, getMaxTradeAmount,
+    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade, getMaxTradeAmount, clearAllData,
   } = useTradeSignals(handleAutoClose);
 
   const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
@@ -81,7 +81,7 @@ const Index = () => {
           type: signal.type,
           quantity: signal.quantity,
           price: signal.limitPrice,
-          maxTradeUsd: settings.maxTradeUsd,
+          maxTradeUsd: settings.accountBalance * (settings.maxTradePercent / 100),
         });
         const entryPrice = parseFloat(result?.fills?.[0]?.price || signal.entryPrice?.replace(/[^0-9.]/g, "") || "0");
         openTrade(signal, entryPrice, false);
@@ -223,7 +223,7 @@ const Index = () => {
               const trade = activeTrades.find(t => t.id === tradeId);
               if (trade && !trade.paper && settings.mode === "live") {
                 const closeSide = trade.side === "BUY" ? "SELL" : "BUY";
-                executeOrder({ symbol: trade.symbol, side: closeSide, type: "MARKET", quantity: trade.quantity, maxTradeUsd: settings.maxTradeUsd * 2 })
+                executeOrder({ symbol: trade.symbol, side: closeSide, type: "MARKET", quantity: trade.quantity, maxTradeUsd: settings.accountBalance * 2 })
                   .then(() => { closeTrade(tradeId); toast.success(`Closed ${trade.symbol} position`); })
                   .catch((err) => toast.error(`Failed to close: ${err.message}`));
               } else {
@@ -233,6 +233,7 @@ const Index = () => {
             }}
             botActive={botActive}
             onToggleBot={() => setBotActive(prev => !prev)}
+            onClearData={() => { setBotActive(false); clearAllData(); toast.success("All trades and history cleared"); }}
           />
         )}
       </main>
