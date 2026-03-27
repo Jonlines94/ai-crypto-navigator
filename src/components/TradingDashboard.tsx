@@ -9,6 +9,16 @@ import {
 import type { TradeSignal, TradingSettings, ActiveTrade } from "@/hooks/useTradeSignals";
 import type { BinanceBalance, AccountValue } from "@/hooks/useBinance";
 
+// Smart price formatter: uses more decimals for small prices
+const fmtPrice = (v: number) => {
+  if (v === 0) return "$0";
+  const abs = Math.abs(v);
+  if (abs >= 1) return `$${v.toFixed(2)}`;
+  if (abs >= 0.01) return `$${v.toFixed(4)}`;
+  if (abs >= 0.0001) return `$${v.toFixed(6)}`;
+  return `$${v.toFixed(8)}`;
+};
+
 interface TradingDashboardProps {
   signals: TradeSignal[];
   activeTrades: ActiveTrade[];
@@ -343,7 +353,7 @@ const TradingDashboard = ({
                         )}
                       </div>
                       <span className="text-[10px] text-muted-foreground">
-                        {parseFloat(trade.quantity).toFixed(6)} @ ${trade.entryPrice.toFixed(2)}
+                        {parseFloat(trade.quantity).toFixed(6)} @ {fmtPrice(trade.entryPrice)}
                       </span>
                     </div>
                   </div>
@@ -352,7 +362,7 @@ const TradingDashboard = ({
                     {/* Current Price */}
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground">Current</div>
-                      <div className="text-sm font-mono font-semibold text-foreground">${trade.currentPrice.toFixed(2)}</div>
+                      <div className="text-sm font-mono font-semibold text-foreground">{fmtPrice(trade.currentPrice)}</div>
                     </div>
 
                     {/* P&L */}
@@ -367,8 +377,8 @@ const TradingDashboard = ({
 
                     {/* SL / TP */}
                     <div className="text-right hidden md:block">
-                      <div className="text-[10px] text-muted-foreground">SL: <span className="text-loss font-mono">${trade.stopLoss.toFixed(2)}</span></div>
-                      <div className="text-[10px] text-muted-foreground">TP: <span className="text-gain font-mono">${trade.takeProfit.toFixed(2)}</span></div>
+                       <div className="text-[10px] text-muted-foreground">SL: <span className="text-loss font-mono">{fmtPrice(trade.stopLoss)}</span></div>
+                       <div className="text-[10px] text-muted-foreground">TP: <span className="text-gain font-mono">{fmtPrice(trade.takeProfit)}</span></div>
                     </div>
 
                     {/* Close Button */}
