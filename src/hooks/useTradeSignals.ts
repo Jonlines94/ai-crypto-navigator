@@ -56,7 +56,7 @@ const DEFAULT_SETTINGS: TradingSettings = {
   autoCloseOnTarget: true,
 };
 
-export function useTradeSignals() {
+export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
   const [signals, setSignals] = useState<TradeSignal[]>([]);
   const [activeTrades, setActiveTrades] = useState<ActiveTrade[]>(() => {
     const saved = localStorage.getItem("active-trades");
@@ -74,13 +74,48 @@ export function useTradeSignals() {
     return saved ? JSON.parse(saved) : [];
   });
   const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onAutoCloseRef = useRef(onAutoClose);
+  onAutoCloseRef.current = onAutoClose;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   // Persist active trades
   useEffect(() => {
     localStorage.setItem("active-trades", JSON.stringify(activeTrades));
   }, [activeTrades]);
 
-  // Poll live prices for active trades
+  // Internal close helper (used by auto-close and manual close)
+  const closeTradeInternal = useCallback((tradeId: string, reason: string) => {
+    setActiveTrades(prev => {
+      const trade = prev.find(t => t.id === tradeId);
+      if (trade) {
+        const historyEntry: TradeSignal = {
+          id: trade.id,
+          symbol: trade.symbol,
+          side: trade.side,
+          type: "MARKET",
+          quantity: trade.quantity,
+          stopLoss: `$${trade.stopLoss}`,
+          takeProfit: `$${trade.takeProfit}`,
+          confidence: 0,
+          reasoning: `${reason}. P&L: $${trade.pnl} (${trade.pnlPercent}%)`,
+          estimatedValueUsd: `$${Math.abs(trade.currentPrice * parseFloat(trade.quantity)).toFixed(2)}`,
+          riskRewardRatio: "—",
+          status: "executed",
+          executedAt: new Date().toISOString(),
+          executionResult: { closedAt: trade.currentPrice, pnl: trade.pnl, pnlPercent: trade.pnlPercent, paper: trade.paper, reason },
+        };
+        setTradeHistory(hist => {
+          const newHist = [historyEntry, ...hist].slice(0, 50);
+          localStorage.setItem("trade-history", JSON.stringify(newHist));
+          return newHist;
+        });
+      }
+      return prev.filter(t => t.id !== tradeId);
+    });
+  }, []);
+
+  // Poll live prices and auto-close on SL/TP
   useEffect(() => {
     if (activeTrades.length === 0) {
       if (priceIntervalRef.current) { clearInterval(priceIntervalRef.current); priceIntervalRef.current = null; }
@@ -97,24 +132,54 @@ export function useTradeSignals() {
           });
           if (data?.success && data.data?.price) prices[sym] = parseFloat(data.data.price);
         }
-        setActiveTrades(prev => prev.map(trade => {
-          const cp = prices[trade.symbol] ?? trade.currentPrice;
-          const qty = parseFloat(trade.quantity);
-          const pnl = trade.side === "BUY"
-            ? (cp - trade.entryPrice) * qty
-            : (trade.entryPrice - cp) * qty;
-          const pnlPercent = trade.side === "BUY"
-            ? ((cp - trade.entryPrice) / trade.entryPrice) * 100
-            : ((trade.entryPrice - cp) / trade.entryPrice) * 100;
-          return { ...trade, currentPrice: cp, pnl: Math.round(pnl * 100) / 100, pnlPercent: Math.round(pnlPercent * 100) / 100 };
-        }));
+
+        setActiveTrades(prev => {
+          const tradesToClose: { trade: ActiveTrade; reason: string }[] = [];
+
+          const updated = prev.map(trade => {
+            const cp = prices[trade.symbol] ?? trade.currentPrice;
+            const qty = parseFloat(trade.quantity);
+            const pnl = trade.side === "BUY"
+              ? (cp - trade.entryPrice) * qty
+              : (trade.entryPrice - cp) * qty;
+            const pnlPercent = trade.side === "BUY"
+              ? ((cp - trade.entryPrice) / trade.entryPrice) * 100
+              : ((trade.entryPrice - cp) / trade.entryPrice) * 100;
+
+            const updatedTrade = { ...trade, currentPrice: cp, pnl: Math.round(pnl * 100) / 100, pnlPercent: Math.round(pnlPercent * 100) / 100 };
+
+            // Check SL/TP auto-close
+            if (settingsRef.current.autoCloseOnTarget) {
+              if (trade.side === "BUY") {
+                if (cp >= trade.takeProfit) tradesToClose.push({ trade: updatedTrade, reason: "Take-profit hit ✅" });
+                else if (cp <= trade.stopLoss) tradesToClose.push({ trade: updatedTrade, reason: "Stop-loss hit 🛑" });
+              } else {
+                if (cp <= trade.takeProfit) tradesToClose.push({ trade: updatedTrade, reason: "Take-profit hit ✅" });
+                else if (cp >= trade.stopLoss) tradesToClose.push({ trade: updatedTrade, reason: "Stop-loss hit 🛑" });
+              }
+            }
+
+            return updatedTrade;
+          });
+
+          // Auto-close triggered trades
+          if (tradesToClose.length > 0) {
+            for (const { trade, reason } of tradesToClose) {
+              onAutoCloseRef.current?.(trade);
+              // Schedule closing outside this setState
+              setTimeout(() => closeTradeInternal(trade.id, reason), 0);
+            }
+          }
+
+          return updated;
+        });
       } catch (e) { console.error("Price poll error:", e); }
     };
 
     updatePrices();
     priceIntervalRef.current = setInterval(updatePrices, 5000);
     return () => { if (priceIntervalRef.current) clearInterval(priceIntervalRef.current); };
-  }, [activeTrades.length]);
+  }, [activeTrades.length, closeTradeInternal]);
 
   const updateSettings = useCallback((updates: Partial<TradingSettings>) => {
     setSettings((prev) => {
