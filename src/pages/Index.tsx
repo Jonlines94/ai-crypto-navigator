@@ -59,12 +59,15 @@ const Index = () => {
 
       // Budget check — works in BOTH paper and live modes
       const totalBalance = accountValueRef.current?.totalUsd || settings.accountBalance;
-      // Sum value of all currently open trades
-      const openValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
-      // Include cumulative spending from this bot cycle (trades opened this cycle aren't in activeTrades yet)
-      const freeBalance = totalBalance - openValue - cycleSpentRef.current;
+      // Only count BUY trades as consuming balance (SELL trades free up balance)
+      const openBuyValue = activeTrades
+        .filter(t => t.side === "BUY")
+        .reduce((sum, t) => sum + parseFloat(t.quantity) * t.entryPrice, 0);
+      const freeBalance = totalBalance - openBuyValue - cycleSpentRef.current;
       
-      if (tradeValue > freeBalance) {
+      console.log(`[Bot] Trade check: ${signal.symbol} needs $${tradeValue.toFixed(2)}, balance=$${totalBalance.toFixed(2)}, openBuys=$${openBuyValue.toFixed(2)}, cycleSpent=$${cycleSpentRef.current.toFixed(2)}, free=$${freeBalance.toFixed(2)}`);
+      
+      if (signal.side === "BUY" && tradeValue > freeBalance) {
         toast.error(`⛔ Insufficient funds: trade needs $${tradeValue.toFixed(2)} but only $${freeBalance.toFixed(2)} available`);
         updateSignalStatus(signal.id, "rejected");
         return;
