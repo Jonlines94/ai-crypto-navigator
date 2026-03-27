@@ -5,7 +5,7 @@ import {
   Play, Loader2, AlertTriangle, DollarSign, Settings, History,
 } from "lucide-react";
 import type { TradeSignal, TradingSettings } from "@/hooks/useTradeSignals";
-import type { BinanceBalance } from "@/hooks/useBinance";
+import type { BinanceBalance, AccountValue } from "@/hooks/useBinance";
 
 interface TradingDashboardProps {
   signals: TradeSignal[];
