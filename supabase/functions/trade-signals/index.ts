@@ -29,10 +29,40 @@ serve(async (req) => {
       `${c.name} (${c.symbol}): Price $${c.price}, 24h change ${c.change24h}%, Volume $${c.volume}, High $${c.high24h}, Low $${c.low24h}, Market Cap $${c.marketCap}`
     ).join("\n");
 
-    const tickerSummary = binanceTickers?.length > 0
-      ? `\n\nTop Binance USDT pairs by volume:\n${binanceTickers.slice(0, 20).map((t: any) =>
-          `${t.symbol}: $${t.price}, 24h ${t.change}%, Vol $${parseFloat(t.volume).toLocaleString()}, H $${t.high}, L $${t.low}`
-        ).join("\n")}`
+    // Categorize tickers for comprehensive scanning
+    const allTickers = binanceTickers || [];
+    const topByVolume = allTickers.slice(0, 50);
+    const bigMovers = allTickers
+      .filter((t: any) => Math.abs(parseFloat(t.change)) > 3)
+      .sort((a: any, b: any) => Math.abs(parseFloat(b.change)) - Math.abs(parseFloat(a.change)))
+      .slice(0, 30);
+    const gainers = allTickers
+      .filter((t: any) => parseFloat(t.change) > 2)
+      .sort((a: any, b: any) => parseFloat(b.change) - parseFloat(a.change))
+      .slice(0, 20);
+    const losers = allTickers
+      .filter((t: any) => parseFloat(t.change) < -2)
+      .sort((a: any, b: any) => parseFloat(a.change) - parseFloat(b.change))
+      .slice(0, 20);
+
+    // Merge unique tickers
+    const seen = new Set<string>();
+    const scanList: any[] = [];
+    for (const t of [...topByVolume, ...bigMovers, ...gainers, ...losers]) {
+      if (!seen.has(t.symbol)) { seen.add(t.symbol); scanList.push(t); }
+    }
+
+    const tickerSummary = scanList.length > 0
+      ? `\n\nFULL BINANCE SCAN (${allTickers.length} total USDT pairs, showing ${scanList.length} most interesting):\n` +
+        `\n--- TOP BY VOLUME (${topByVolume.length}) ---\n${topByVolume.map((t: any) =>
+          `${t.symbol}: $${t.price}, 24h ${t.change}%, Vol $${parseFloat(t.volume).toLocaleString()}, H $${t.high}, L $${t.low}, Trades ${t.trades}`
+        ).join("\n")}` +
+        (gainers.length > 0 ? `\n\n--- TOP GAINERS ---\n${gainers.map((t: any) =>
+          `${t.symbol}: $${t.price}, +${t.change}%, Vol $${parseFloat(t.volume).toLocaleString()}`
+        ).join("\n")}` : "") +
+        (losers.length > 0 ? `\n\n--- TOP LOSERS (reversal opportunities) ---\n${losers.map((t: any) =>
+          `${t.symbol}: $${t.price}, ${t.change}%, Vol $${parseFloat(t.volume).toLocaleString()}`
+        ).join("\n")}` : "")
       : "";
 
     const portfolioSummary = portfolio?.length > 0
