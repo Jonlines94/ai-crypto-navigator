@@ -24,6 +24,7 @@ serve(async (req) => {
     const maxTradeUsd = settings?.maxTradeUsd || 100;
     const riskLevel = settings?.riskLevel || "medium";
     const stopLossPct = settings?.stopLossPct || 5;
+    const takeProfitPct = settings?.takeProfitPct || 10;
     const totalBalanceUsd = settings?.totalBalanceUsd || 0;
 
     const marketSummary = coins.map((c: any) =>
