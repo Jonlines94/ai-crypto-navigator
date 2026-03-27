@@ -135,7 +135,7 @@ const Index = () => {
     runCycle();
     botIntervalRef.current = setInterval(runCycle, 60000);
     return () => { if (botIntervalRef.current) clearInterval(botIntervalRef.current); };
-  }, [botActive, coins, balances, generateSignals, handleApprove, handleReject]);
+  }, [botActive]);
   return (
     <div className="min-h-screen bg-background">
       <Header />
