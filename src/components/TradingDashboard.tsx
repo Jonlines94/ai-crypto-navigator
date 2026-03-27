@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import {
   Bot, Shield, ShieldAlert, TrendingUp, TrendingDown, Check, X,
   Play, Loader2, AlertTriangle, DollarSign, Settings, History,
-  XCircle, ArrowUpRight, ArrowDownRight,
+  XCircle, ArrowUpRight, ArrowDownRight, Power,
 } from "lucide-react";
 import type { TradeSignal, TradingSettings, ActiveTrade } from "@/hooks/useTradeSignals";
 import type { BinanceBalance, AccountValue } from "@/hooks/useBinance";
@@ -26,6 +26,8 @@ interface TradingDashboardProps {
   onReject: (id: string) => void;
   onFetchBalances: () => void;
   onCloseTrade: (tradeId: string) => void;
+  botActive: boolean;
+  onToggleBot: () => void;
 }
 
 const TradingDashboard = ({
@@ -45,6 +47,8 @@ const TradingDashboard = ({
   onReject,
   onFetchBalances,
   onCloseTrade,
+  botActive,
+  onToggleBot,
 }: TradingDashboardProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -109,6 +113,17 @@ const TradingDashboard = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleBot}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg transition-all ${
+              botActive
+                ? "bg-gain text-gain-foreground animate-pulse shadow-lg shadow-gain/20"
+                : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <Power className="w-3.5 h-3.5" />
+            {botActive ? "Bot Active" : "Activate Bot"}
+          </button>
           <button
             onClick={() => setShowHistory(!showHistory)}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-secondary/50"
@@ -406,14 +421,20 @@ const TradingDashboard = ({
 
       {/* Market Outlook + Generate */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           {marketOutlook && (
             <p className="text-sm text-muted-foreground italic">📊 {marketOutlook}</p>
+          )}
+          {botActive && (
+            <span className="flex items-center gap-1.5 text-[10px] font-mono text-gain bg-gain/10 px-2 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-gain animate-pulse" />
+              AUTO-TRADING · Scanning every 60s
+            </span>
           )}
         </div>
         <button
           onClick={onGenerateSignals}
-          disabled={loading}
+          disabled={loading || botActive}
           className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Header from "@/components/Header";
 import TickerBar from "@/components/TickerBar";
 import TopPicksBanner from "@/components/TopPicksBanner";
@@ -37,6 +37,12 @@ const Index = () => {
   } = useTradeSignals(handleAutoClose);
 
   const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
+  const [botActive, setBotActive] = useState(false);
+  const botIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const signalsRef = useRef(signals);
+  signalsRef.current = signals;
+  const signalsLoadingRef = useRef(signalsLoading);
+  signalsLoadingRef.current = signalsLoading;
 
   useEffect(() => {
     if (coins.length > 0 && predictions.length === 0 && !aiLoading) {
@@ -76,6 +82,33 @@ const Index = () => {
     toast.info("Trade signal skipped");
   }, [updateSignalStatus]);
 
+  // Autonomous bot loop
+  useEffect(() => {
+    if (!botActive) {
+      if (botIntervalRef.current) { clearInterval(botIntervalRef.current); botIntervalRef.current = null; }
+      return;
+    }
+
+    const runCycle = () => {
+      const pending = signalsRef.current.filter(s => s.status === "pending");
+      if (pending.length > 0) {
+        for (const signal of pending) {
+          if (signal.confidence >= 60) {
+            handleApprove(signal);
+          } else {
+            handleReject(signal.id);
+          }
+        }
+      }
+      if (pending.length === 0 && !signalsLoadingRef.current && coins.length > 0) {
+        generateSignals(coins, balances);
+      }
+    };
+
+    runCycle();
+    botIntervalRef.current = setInterval(runCycle, 60000);
+    return () => { if (botIntervalRef.current) clearInterval(botIntervalRef.current); };
+  }, [botActive, coins, balances, generateSignals, handleApprove, handleReject]);
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -171,6 +204,8 @@ const Index = () => {
                 toast.success(`Closed ${trade?.symbol || ""} paper position`);
               }
             }}
+            botActive={botActive}
+            onToggleBot={() => setBotActive(prev => !prev)}
           />
         )}
       </main>
