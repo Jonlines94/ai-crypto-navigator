@@ -20,8 +20,8 @@ const Index = () => {
   const { predictions, loading: aiLoading, error: aiError, generatePredictions } = useAiPredictions();
   const { balances, accountValue, loading: balancesLoading, fetchBalances, executeOrder, fetchAllTickers } = useBinance();
   const {
-    signals, marketOutlook, loading: signalsLoading, error: signalsError,
-    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus,
+    signals, activeTrades, marketOutlook, loading: signalsLoading, error: signalsError,
+    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade,
   } = useTradeSignals();
 
   const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
