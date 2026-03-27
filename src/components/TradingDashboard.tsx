@@ -64,6 +64,14 @@ const TradingDashboard = ({
   const totalActivePnl = activeTrades.reduce((sum, t) => sum + t.pnl, 0);
   const totalActiveValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
 
+  // Equity calculations
+  const totalBalance = accountValue?.totalUsd || settings.accountBalance;
+  const allocatedValue = activeTrades
+    .filter(t => t.side === "BUY")
+    .reduce((sum, t) => sum + parseFloat(t.quantity) * t.entryPrice, 0);
+  const remainingEquity = totalBalance - allocatedValue;
+  const equityPercent = totalBalance > 0 ? (remainingEquity / totalBalance) * 100 : 100;
+
   // Cumulative P&L chart data
   const pnlChartData = useMemo(() => {
     const executed = tradeHistory
