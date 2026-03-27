@@ -204,13 +204,13 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
         low24h: c.low_24h,
       }));
 
-      // Also fetch top Binance tickers for broader scanning
+      // Fetch ALL Binance USDT tickers for full market scanning
       let binanceTickers: any[] = [];
       try {
         const { data: tickerData } = await supabase.functions.invoke("binance-proxy", {
           body: { action: "all_tickers" },
         });
-        if (tickerData?.success) binanceTickers = tickerData.data.slice(0, 30);
+        if (tickerData?.success) binanceTickers = tickerData.data; // Send ALL tickers, not just top 30
       } catch (e) { console.error("Failed to fetch tickers:", e); }
 
       const { data, error: fnError } = await supabase.functions.invoke("trade-signals", {
