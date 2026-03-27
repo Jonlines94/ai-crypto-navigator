@@ -26,6 +26,8 @@ interface TradingDashboardProps {
   onReject: (id: string) => void;
   onFetchBalances: () => void;
   onCloseTrade: (tradeId: string) => void;
+  botActive: boolean;
+  onToggleBot: () => void;
 }
 
 const TradingDashboard = ({
