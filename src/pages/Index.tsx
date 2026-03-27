@@ -45,6 +45,12 @@ const Index = () => {
   signalsLoadingRef.current = signalsLoading;
   const accountValueRef = useRef(accountValue);
   accountValueRef.current = accountValue;
+  const activeTradesRef = useRef(activeTrades);
+  activeTradesRef.current = activeTrades;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const balancesRef = useRef(balances);
+  balancesRef.current = balances;
   const cycleSpentRef = useRef(0); // tracks cumulative USD spent in current bot cycle
 
   useEffect(() => {
@@ -58,9 +64,9 @@ const Index = () => {
       const tradeValue = parseFloat(signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0");
 
       // Budget check — works in BOTH paper and live modes
-      const totalBalance = accountValueRef.current?.totalUsd || settings.accountBalance;
-      // Only count BUY trades as consuming balance (SELL trades free up balance)
-      const openBuyValue = activeTrades
+      const currentSettings = settingsRef.current;
+      const totalBalance = accountValueRef.current?.totalUsd || currentSettings.accountBalance;
+      const openBuyValue = activeTradesRef.current
         .filter(t => t.side === "BUY")
         .reduce((sum, t) => sum + parseFloat(t.quantity) * t.entryPrice, 0);
       const freeBalance = totalBalance - openBuyValue - cycleSpentRef.current;
@@ -73,18 +79,16 @@ const Index = () => {
         return;
       }
 
-      // Also enforce per-trade max
-      const maxPerTrade = settings.accountBalance * (settings.maxTradePercent / 100);
+      const maxPerTrade = currentSettings.accountBalance * (currentSettings.maxTradePercent / 100);
       if (tradeValue > maxPerTrade) {
         toast.error(`⛔ Trade $${tradeValue.toFixed(2)} exceeds per-trade max $${maxPerTrade.toFixed(2)}`);
         updateSignalStatus(signal.id, "rejected");
         return;
       }
 
-      // Track this trade's value for the current cycle
       cycleSpentRef.current += tradeValue;
 
-      if (settings.mode === "paper") {
+      if (currentSettings.mode === "paper") {
         const rawEntry = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || "0");
         const entryPrice = rawEntry > 0 ? rawEntry : parseFloat(signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
         openTrade(signal, entryPrice || 0, true);
@@ -108,7 +112,7 @@ const Index = () => {
       updateSignalStatus(signal.id, "failed", { error: err instanceof Error ? err.message : "Unknown error" });
       toast.error(`❌ Trade failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
-  }, [settings, executeOrder, updateSignalStatus, openTrade, activeTrades]);
+  }, [executeOrder, updateSignalStatus, openTrade]);
 
   const handleReject = useCallback((id: string) => {
     updateSignalStatus(id, "rejected");
@@ -145,7 +149,7 @@ const Index = () => {
         }
       } else if (!signalsLoadingRef.current && coins.length > 0) {
         console.log("[Bot] No pending signals, generating new ones...");
-        await generateSignals(coins, balances, accountValueRef.current?.totalUsd);
+        await generateSignals(coins, balancesRef.current, accountValueRef.current?.totalUsd);
         // Wait a tick for state to update, then process the new signals
         await new Promise(r => setTimeout(r, 500));
         const newPending = signalsRef.current.filter(s => s.status === "pending");
