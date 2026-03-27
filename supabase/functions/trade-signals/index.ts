@@ -121,7 +121,7 @@ Respond ONLY by calling the provided tool.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Analyze ALL data below and recommend the most profitable trades:\n\n${marketSummary}${tickerSummary}${portfolioSummary}${activeTradesSummary}` },
