@@ -81,7 +81,7 @@ const Index = () => {
           type: signal.type,
           quantity: signal.quantity,
           price: signal.limitPrice,
-          maxTradeUsd: settings.maxTradeUsd,
+          maxTradeUsd: settings.accountBalance * (settings.maxTradePercent / 100),
         });
         const entryPrice = parseFloat(result?.fills?.[0]?.price || signal.entryPrice?.replace(/[^0-9.]/g, "") || "0");
         openTrade(signal, entryPrice, false);
