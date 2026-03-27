@@ -124,6 +124,8 @@ const Index = () => {
     }
 
     const runCycle = async () => {
+      // Reset cycle spending tracker
+      cycleSpentRef.current = 0;
       // Refresh balances before each cycle to know actual available funds
       try { await fetchBalances(); } catch (e) { console.error("Balance refresh failed:", e); }
 
