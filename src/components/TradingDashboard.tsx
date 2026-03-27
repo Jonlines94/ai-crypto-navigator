@@ -64,6 +64,14 @@ const TradingDashboard = ({
   const totalActivePnl = activeTrades.reduce((sum, t) => sum + t.pnl, 0);
   const totalActiveValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
 
+  // Equity calculations
+  const totalBalance = accountValue?.totalUsd || settings.accountBalance;
+  const allocatedValue = activeTrades
+    .filter(t => t.side === "BUY")
+    .reduce((sum, t) => sum + parseFloat(t.quantity) * t.entryPrice, 0);
+  const remainingEquity = totalBalance - allocatedValue;
+  const equityPercent = totalBalance > 0 ? (remainingEquity / totalBalance) * 100 : 100;
+
   // Cumulative P&L chart data
   const pnlChartData = useMemo(() => {
     const executed = tradeHistory
@@ -109,9 +117,27 @@ const TradingDashboard = ({
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {settings.mode === "live"
-                ? `Balance $${settings.accountBalance} · ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}% · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
-                : `Balance $${settings.accountBalance} · ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}%`}
+                ? `Max ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}% · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
+                : `Max ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}%`}
             </p>
+            {/* Equity Bar */}
+            <div className="mt-2 flex items-center gap-3">
+              <div className="flex items-center gap-4 text-[11px] font-mono">
+                <span className="text-muted-foreground">Equity: <span className="text-foreground font-semibold">${totalBalance.toFixed(2)}</span></span>
+                <span className="text-muted-foreground">Allocated: <span className="text-primary font-semibold">${allocatedValue.toFixed(2)}</span></span>
+                <span className="text-muted-foreground">Available: <span className={`font-semibold ${remainingEquity > 0 ? "text-gain" : "text-loss"}`}>${remainingEquity.toFixed(2)}</span></span>
+                {totalActivePnl !== 0 && (
+                  <span className="text-muted-foreground">P&L: <span className={`font-semibold ${totalActivePnl >= 0 ? "text-gain" : "text-loss"}`}>{totalActivePnl >= 0 ? "+" : ""}${totalActivePnl.toFixed(2)}</span></span>
+                )}
+              </div>
+              <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden max-w-[200px]">
+                <div
+                  className={`h-full rounded-full transition-all ${equityPercent > 30 ? "bg-gain" : equityPercent > 10 ? "bg-yellow-500" : "bg-loss"}`}
+                  style={{ width: `${Math.max(0, Math.min(100, equityPercent))}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-muted-foreground">{equityPercent.toFixed(0)}% free</span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
