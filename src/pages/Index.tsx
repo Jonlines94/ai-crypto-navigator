@@ -35,11 +35,11 @@ const Index = () => {
   const handleApprove = useCallback(async (signal: any) => {
     try {
       if (settings.mode === "paper") {
-        // Paper trade — just log it
+        const entryPrice = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
+        openTrade(signal, entryPrice || 0, true);
         updateSignalStatus(signal.id, "executed", { paper: true, timestamp: new Date().toISOString() });
-        toast.success(`📝 Paper trade: ${signal.side} ${signal.quantity} ${signal.symbol}`);
+        toast.success(`📝 Paper trade opened: ${signal.side} ${signal.quantity} ${signal.symbol}`);
       } else {
-        // Live trade
         const result = await executeOrder({
           symbol: signal.symbol,
           side: signal.side,
@@ -48,6 +48,8 @@ const Index = () => {
           price: signal.limitPrice,
           maxTradeUsd: settings.maxTradeUsd,
         });
+        const entryPrice = parseFloat(result?.fills?.[0]?.price || signal.entryPrice?.replace(/[^0-9.]/g, "") || "0");
+        openTrade(signal, entryPrice, false);
         updateSignalStatus(signal.id, "executed", result);
         toast.success(`✅ Trade executed: ${signal.side} ${signal.quantity} ${signal.symbol}`);
       }
@@ -55,7 +57,7 @@ const Index = () => {
       updateSignalStatus(signal.id, "failed", { error: err instanceof Error ? err.message : "Unknown error" });
       toast.error(`❌ Trade failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
-  }, [settings, executeOrder, updateSignalStatus]);
+  }, [settings, executeOrder, updateSignalStatus, openTrade]);
 
   const handleReject = useCallback((id: string) => {
     updateSignalStatus(id, "rejected");
