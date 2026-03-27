@@ -82,11 +82,16 @@ const Index = () => {
     toast.info("Trade signal skipped");
   }, [updateSignalStatus]);
 
-  // Autonomous bot loop
+  // Autonomous bot loop — fully automatic, executes all trades including live
   useEffect(() => {
     if (!botActive) {
       if (botIntervalRef.current) { clearInterval(botIntervalRef.current); botIntervalRef.current = null; }
       return;
+    }
+
+    // When bot is activated, disable manual approval requirement
+    if (settings.requireApproval) {
+      updateSettings({ requireApproval: false });
     }
 
     const runCycle = () => {
@@ -105,6 +110,8 @@ const Index = () => {
       }
     };
 
+    // Run immediately then every 60s
+    toast.success(`🤖 Bot activated — ${settings.mode === "live" ? "LIVE auto-execution" : "Paper trading"} enabled`);
     runCycle();
     botIntervalRef.current = setInterval(runCycle, 60000);
     return () => { if (botIntervalRef.current) clearInterval(botIntervalRef.current); };
