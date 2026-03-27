@@ -362,7 +362,7 @@ const TradingDashboard = ({
                     {/* Current Price */}
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground">Current</div>
-                      <div className="text-sm font-mono font-semibold text-foreground">${trade.currentPrice.toFixed(2)}</div>
+                      <div className="text-sm font-mono font-semibold text-foreground">{fmtPrice(trade.currentPrice)}</div>
                     </div>
 
                     {/* P&L */}
