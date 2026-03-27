@@ -136,6 +136,7 @@ const Index = () => {
             error={signalsError}
             settings={settings}
             tradeHistory={tradeHistory}
+            accountValue={accountValue}
             balances={balances}
             balancesLoading={balancesLoading}
             onGenerateSignals={() => generateSignals(coins, balances)}
