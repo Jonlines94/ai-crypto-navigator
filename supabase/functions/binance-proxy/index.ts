@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createHmac } from "https://deno.land/std@0.168.0/crypto/mod.ts";
+import { encode as hexEncode } from "https://deno.land/std@0.168.0/encoding/hex.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,15 +9,19 @@ const corsHeaders = {
 
 const BINANCE_BASE = "https://api.binance.com";
 
-function sign(queryString: string, secret: string): string {
+async function hmacSign(queryString: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
-  const key = encoder.encode(secret);
-  const data = encoder.encode(queryString);
-  
-  // Use Web Crypto API for HMAC-SHA256
-  const hmac = createHmac("sha256", key);
-  hmac.update(data);
-  return hmac.toString();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(queryString));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 async function binanceRequest(
@@ -33,28 +37,30 @@ async function binanceRequest(
 
   const headers: Record<string, string> = {
     "X-MBX-APIKEY": apiKey,
-    "Content-Type": "application/x-www-form-urlencoded",
   };
 
   if (signed) {
     params.timestamp = Date.now().toString();
-    params.recvWindow = "5000";
+    params.recvWindow = "10000";
   }
 
   const queryString = new URLSearchParams(params).toString();
 
   let url: string;
   if (signed) {
-    const signature = sign(queryString, apiSecret);
+    const signature = await hmacSign(queryString, apiSecret);
     url = `${BINANCE_BASE}${endpoint}?${queryString}&signature=${signature}`;
   } else {
     url = `${BINANCE_BASE}${endpoint}${queryString ? `?${queryString}` : ""}`;
   }
 
+  console.log(`Binance ${method} ${endpoint} signed=${signed}`);
+
   const response = await fetch(url, { method, headers });
   const data = await response.json();
 
   if (!response.ok) {
+    console.error(`Binance error: ${response.status}`, JSON.stringify(data));
     throw new Error(`Binance API error [${response.status}]: ${JSON.stringify(data)}`);
   }
 
@@ -66,30 +72,115 @@ serve(async (req) => {
 
   try {
     const { action, params } = await req.json();
+    console.log("binance-proxy action:", action);
 
     let result;
     switch (action) {
-      case "account":
+      case "account": {
         result = await binanceRequest("GET", "/api/v3/account", {}, true);
         break;
+      }
 
-      case "balances":
-        const account = await binanceRequest("GET", "/api/v3/account", {}, true);
-        result = account.balances?.filter(
+      case "balances": {
+        const acct = await binanceRequest("GET", "/api/v3/account", {}, true);
+        result = (acct.balances || []).filter(
           (b: any) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0
-        ) || [];
+        );
         break;
+      }
 
-      case "ticker":
+      case "account_value": {
+        // Get balances + prices to calculate total USD value
+        const acct2 = await binanceRequest("GET", "/api/v3/account", {}, true);
+        const nonZero = (acct2.balances || []).filter(
+          (b: any) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0
+        );
+
+        // Get all prices
+        const allPrices = await binanceRequest("GET", "/api/v3/ticker/price");
+        const priceMap: Record<string, number> = {};
+        for (const p of allPrices) {
+          priceMap[p.symbol] = parseFloat(p.price);
+        }
+
+        let totalUsd = 0;
+        const holdings = [];
+        for (const b of nonZero) {
+          const total = parseFloat(b.free) + parseFloat(b.locked);
+          let usdValue = 0;
+
+          if (b.asset === "USDT" || b.asset === "BUSD" || b.asset === "USDC" || b.asset === "FDUSD") {
+            usdValue = total;
+          } else if (priceMap[`${b.asset}USDT`]) {
+            usdValue = total * priceMap[`${b.asset}USDT`];
+          } else if (priceMap[`${b.asset}BUSD`]) {
+            usdValue = total * priceMap[`${b.asset}BUSD`];
+          } else if (priceMap[`${b.asset}BTC`] && priceMap["BTCUSDT"]) {
+            usdValue = total * priceMap[`${b.asset}BTC`] * priceMap["BTCUSDT"];
+          }
+
+          holdings.push({
+            asset: b.asset,
+            free: b.free,
+            locked: b.locked,
+            total,
+            usdValue: Math.round(usdValue * 100) / 100,
+          });
+          totalUsd += usdValue;
+        }
+
+        holdings.sort((a: any, b: any) => b.usdValue - a.usdValue);
+        result = { totalUsd: Math.round(totalUsd * 100) / 100, holdings };
+        break;
+      }
+
+      case "ticker": {
         result = await binanceRequest("GET", "/api/v3/ticker/24hr", params || {});
         break;
+      }
 
-      case "price":
+      case "all_tickers": {
+        // Get all trading pairs with 24h data
+        const tickers = await binanceRequest("GET", "/api/v3/ticker/24hr");
+        // Filter for USDT pairs with meaningful volume
+        result = tickers
+          .filter((t: any) => t.symbol.endsWith("USDT") && parseFloat(t.quoteVolume) > 100000)
+          .map((t: any) => ({
+            symbol: t.symbol,
+            price: t.lastPrice,
+            change: t.priceChangePercent,
+            volume: t.quoteVolume,
+            high: t.highPrice,
+            low: t.lowPrice,
+            trades: t.count,
+          }))
+          .sort((a: any, b: any) => parseFloat(b.volume) - parseFloat(a.volume));
+        break;
+      }
+
+      case "price": {
         result = await binanceRequest("GET", "/api/v3/ticker/price", params || {});
         break;
+      }
+
+      case "exchange_info": {
+        // Get all tradeable symbols
+        const info = await binanceRequest("GET", "/api/v3/exchangeInfo");
+        result = info.symbols
+          ?.filter((s: any) => s.status === "TRADING" && s.quoteAsset === "USDT")
+          .map((s: any) => ({
+            symbol: s.symbol,
+            baseAsset: s.baseAsset,
+            quoteAsset: s.quoteAsset,
+            minQty: s.filters?.find((f: any) => f.filterType === "LOT_SIZE")?.minQty,
+            stepSize: s.filters?.find((f: any) => f.filterType === "LOT_SIZE")?.stepSize,
+            minNotional: s.filters?.find((f: any) => f.filterType === "NOTIONAL")?.minNotional ||
+              s.filters?.find((f: any) => f.filterType === "MIN_NOTIONAL")?.minNotional,
+          })) || [];
+        break;
+      }
 
       case "order": {
-        // SAFETY CHECKS
         if (!params?.symbol || !params?.side || !params?.type) {
           throw new Error("Missing required order parameters: symbol, side, type");
         }
@@ -97,7 +188,6 @@ serve(async (req) => {
         const quantity = parseFloat(params.quantity || "0");
         const maxTradeUsd = parseFloat(params.maxTradeUsd || "100");
 
-        // Get current price for safety check
         const priceData = await binanceRequest("GET", "/api/v3/ticker/price", { symbol: params.symbol });
         const currentPrice = parseFloat(priceData.price);
         const orderValueUsd = quantity * currentPrice;
@@ -108,7 +198,6 @@ serve(async (req) => {
           );
         }
 
-        // Execute the order
         const orderParams: Record<string, string> = {
           symbol: params.symbol,
           side: params.side.toUpperCase(),
@@ -116,9 +205,14 @@ serve(async (req) => {
           quantity: params.quantity,
         };
 
-        if (params.type === "LIMIT") {
+        if (params.type.toUpperCase() === "LIMIT") {
           orderParams.price = params.price;
           orderParams.timeInForce = params.timeInForce || "GTC";
+        }
+
+        if (params.type.toUpperCase() === "MARKET" && !params.quantity && params.quoteOrderQty) {
+          delete orderParams.quantity;
+          orderParams.quoteOrderQty = params.quoteOrderQty;
         }
 
         result = await binanceRequest("POST", "/api/v3/order", orderParams, true);
@@ -126,7 +220,6 @@ serve(async (req) => {
       }
 
       case "test_order": {
-        // Test order (no real execution)
         const testParams: Record<string, string> = {
           symbol: params.symbol,
           side: params.side.toUpperCase(),
@@ -134,7 +227,7 @@ serve(async (req) => {
           quantity: params.quantity,
         };
 
-        if (params.type === "LIMIT") {
+        if (params.type.toUpperCase() === "LIMIT") {
           testParams.price = params.price;
           testParams.timeInForce = params.timeInForce || "GTC";
         }
@@ -144,23 +237,26 @@ serve(async (req) => {
         break;
       }
 
-      case "open_orders":
+      case "open_orders": {
         result = await binanceRequest("GET", "/api/v3/openOrders", params || {}, true);
         break;
+      }
 
-      case "cancel_order":
+      case "cancel_order": {
         result = await binanceRequest("DELETE", "/api/v3/order", {
           symbol: params.symbol,
           orderId: params.orderId,
         }, true);
         break;
+      }
 
-      case "trade_history":
+      case "trade_history": {
         result = await binanceRequest("GET", "/api/v3/myTrades", {
           symbol: params.symbol,
           limit: params.limit || "20",
         }, true);
         break;
+      }
 
       default:
         throw new Error(`Unknown action: ${action}`);
