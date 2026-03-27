@@ -117,7 +117,7 @@ const TradingDashboard = ({
             className="bg-card border border-border rounded-xl p-5 space-y-4 overflow-hidden"
           >
             <h3 className="text-sm font-semibold text-foreground">Trading Settings</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Mode</label>
                 <select
