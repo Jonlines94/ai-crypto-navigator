@@ -54,6 +54,21 @@ const Index = () => {
 
   const handleApprove = useCallback(async (signal: any) => {
     try {
+      const tradeValue = parseFloat(signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0");
+
+      // Check against actual account balance in live mode
+      if (settings.mode === "live" && accountValueRef.current) {
+        const available = accountValueRef.current.totalUsd;
+        // Subtract value of currently open trades
+        const openValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
+        const freeBalance = available - openValue;
+        if (tradeValue > freeBalance) {
+          toast.error(`⛔ Insufficient funds: trade needs $${tradeValue.toFixed(2)} but only $${freeBalance.toFixed(2)} available`);
+          updateSignalStatus(signal.id, "rejected");
+          return;
+        }
+      }
+
       if (settings.mode === "paper") {
         const entryPrice = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
         openTrade(signal, entryPrice || 0, true);
@@ -77,7 +92,7 @@ const Index = () => {
       updateSignalStatus(signal.id, "failed", { error: err instanceof Error ? err.message : "Unknown error" });
       toast.error(`❌ Trade failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
-  }, [settings, executeOrder, updateSignalStatus, openTrade]);
+  }, [settings, executeOrder, updateSignalStatus, openTrade, activeTrades]);
 
   const handleReject = useCallback((id: string) => {
     updateSignalStatus(id, "rejected");
