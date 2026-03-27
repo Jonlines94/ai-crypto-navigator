@@ -304,5 +304,6 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     updateSignalStatus,
     openTrade,
     closeTrade,
+    getMaxTradeAmount,
   };
 }
