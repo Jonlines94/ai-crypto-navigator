@@ -5,7 +5,7 @@ interface TickerBarProps {
   loading: boolean;
 }
 
-const TickerBar = ({ coins, loading }: TickerBarProps) => {
+const TickerBar = ({ coins = [], loading }: TickerBarProps) => {
   if (loading || coins.length === 0) {
     return (
       <div className="w-full overflow-hidden border-b border-border bg-card/50 backdrop-blur-sm py-3">

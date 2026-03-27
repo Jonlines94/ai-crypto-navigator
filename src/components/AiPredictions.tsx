@@ -9,7 +9,7 @@ interface AiPredictionsProps {
   onRefresh: () => void;
 }
 
-const AiPredictions = ({ predictions, loading, error, onRefresh }: AiPredictionsProps) => {
+const AiPredictions = ({ predictions = [], loading, error, onRefresh }: AiPredictionsProps) => {
   const actionIcon = (action: string) => {
     if (action === "BUY") return <TrendingUp className="w-3 h-3" />;
     if (action === "SELL") return <TrendingDown className="w-3 h-3" />;
