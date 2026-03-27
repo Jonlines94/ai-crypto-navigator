@@ -111,12 +111,15 @@ const Index = () => {
       updateSettings({ requireApproval: false });
     }
 
-    const runCycle = () => {
+    const runCycle = async () => {
+      // Refresh balances before each cycle to know actual available funds
+      try { await fetchBalances(); } catch (e) { console.error("Balance refresh failed:", e); }
+
       const pending = signalsRef.current.filter(s => s.status === "pending");
       if (pending.length > 0) {
         for (const signal of pending) {
           if (signal.confidence >= 60) {
-            handleApprove(signal);
+            await handleApprove(signal);
           } else {
             handleReject(signal.id);
           }
