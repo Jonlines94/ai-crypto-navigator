@@ -92,13 +92,20 @@ TRADE SELECTION:
 - Mix trade types: 1-2 high-conviction major pair trades + 1-2 high-potential altcoin trades.
 - Consider pairs you may not typically trade — the AI advantage is scanning everything.
 
+CRITICAL BUDGET CONSTRAINT:
+- Total account balance: $${totalBalanceUsd > 0 ? totalBalanceUsd.toFixed(2) : "unknown"}
+- NEVER recommend trades that would exceed the total account balance
+- Max trade size: $${maxTradeUsd} per trade (hard limit)
+- The TOTAL value of ALL recommended trades combined must NOT exceed the available balance
+- If balance is low, recommend fewer trades or smaller positions
+
 RULES:
 - Risk level: ${riskLevel} (conservative=small positions+tight stops, medium=balanced, aggressive=larger positions+wider stops)
-- Max trade size: $${maxTradeUsd} per trade
 - Stop-loss: ${stopLossPct}% from entry (tighter for conservative, can be wider for aggressive)
 - ALWAYS set take-profit at minimum 2x the stop-loss distance for positive expectancy
 - Use Binance USDT trading pairs (e.g., BTCUSDT, ETHUSDT, SOLUSDT, CFGUSDT, etc.)
 - Quantity must be realistic for the pair's minimum lot size and price
+- Each trade's estimatedValueUsd must be within $${maxTradeUsd} and within remaining budget
 - Recommend 2-5 HIGH CONVICTION trades from ANY pair in the data
 - Include the exact entry price for each trade
 - For SELL signals on pairs you don't hold, these represent SHORT sentiment — note to sell if held
