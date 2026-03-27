@@ -264,35 +264,13 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
   }, []);
 
   const closeTrade = useCallback((tradeId: string) => {
-    setActiveTrades(prev => {
-      const trade = prev.find(t => t.id === tradeId);
-      if (trade) {
-        // Add to history
-        const historyEntry: TradeSignal = {
-          id: trade.id,
-          symbol: trade.symbol,
-          side: trade.side,
-          type: "MARKET",
-          quantity: trade.quantity,
-          stopLoss: `$${trade.stopLoss}`,
-          takeProfit: `$${trade.takeProfit}`,
-          confidence: 0,
-          reasoning: `Closed manually. P&L: $${trade.pnl} (${trade.pnlPercent}%)`,
-          estimatedValueUsd: `$${Math.abs(trade.currentPrice * parseFloat(trade.quantity)).toFixed(2)}`,
-          riskRewardRatio: "—",
-          status: "executed",
-          executedAt: new Date().toISOString(),
-          executionResult: { closedAt: trade.currentPrice, pnl: trade.pnl, pnlPercent: trade.pnlPercent, paper: trade.paper },
-        };
-        setTradeHistory(hist => {
-          const newHist = [historyEntry, ...hist].slice(0, 50);
-          localStorage.setItem("trade-history", JSON.stringify(newHist));
-          return newHist;
-        });
-      }
-      return prev.filter(t => t.id !== tradeId);
-    });
-  }, []);
+    closeTradeInternal(tradeId, "Closed manually");
+  }, [closeTradeInternal]);
+
+  const getMaxTradeAmount = useCallback((accountBalance: number) => {
+    const fromPercent = accountBalance * (settings.maxTradePercent / 100);
+    return Math.min(fromPercent, settings.maxTradeUsd);
+  }, [settings.maxTradePercent, settings.maxTradeUsd]);
 
   const updateSignalStatus = useCallback((id: string, status: TradeSignal["status"], result?: any) => {
     setSignals((prev) => {
