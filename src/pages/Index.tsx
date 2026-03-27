@@ -85,7 +85,8 @@ const Index = () => {
       cycleSpentRef.current += tradeValue;
 
       if (settings.mode === "paper") {
-        const entryPrice = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
+        const rawEntry = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || "0");
+        const entryPrice = rawEntry > 0 ? rawEntry : parseFloat(signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
         openTrade(signal, entryPrice || 0, true);
         updateSignalStatus(signal.id, "executed", { paper: true, timestamp: new Date().toISOString() });
         toast.success(`📝 Paper trade opened: ${signal.side} ${signal.quantity} ${signal.symbol}`);
