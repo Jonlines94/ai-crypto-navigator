@@ -84,8 +84,8 @@ const TradingDashboard = ({
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {settings.mode === "live"
-                ? `Max $${settings.maxTradeUsd}/trade · ${settings.stopLossPct}% stop-loss · Approval ${settings.requireApproval ? "required" : "auto"}`
-                : "No real money at risk. Switch to live when ready."}
+                ? `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · ${settings.stopLossPct}% SL · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
+                : `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`}
             </p>
           </div>
         </div>
