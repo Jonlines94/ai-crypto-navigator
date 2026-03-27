@@ -102,8 +102,9 @@ CRITICAL BUDGET CONSTRAINT:
 
 RULES:
 - Risk level: ${riskLevel} (conservative=small positions+tight stops, medium=balanced, aggressive=larger positions+wider stops)
-- Stop-loss: ${stopLossPct}% from entry (tighter for conservative, can be wider for aggressive)
-- ALWAYS set take-profit at minimum 2x the stop-loss distance for positive expectancy
+- Stop-loss: EXACTLY ${stopLossPct}% from entry price
+- Take-profit: EXACTLY ${takeProfitPct}% from entry price
+- These SL/TP percentages are USER-CONFIGURED — always use them precisely
 - Use Binance USDT trading pairs (e.g., BTCUSDT, ETHUSDT, SOLUSDT, CFGUSDT, etc.)
 - Quantity must be realistic for the pair's minimum lot size and price
 - Each trade's estimatedValueUsd must be within $${maxTradeUsd} and within remaining budget
