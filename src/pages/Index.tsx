@@ -214,7 +214,7 @@ const Index = () => {
             accountValue={accountValue}
             balances={balances}
             balancesLoading={balancesLoading}
-            onGenerateSignals={() => generateSignals(coins, balances)}
+            onGenerateSignals={() => generateSignals(coins, balances, accountValue?.totalUsd)}
             onUpdateSettings={updateSettings}
             onApprove={handleApprove}
             onReject={handleReject}
