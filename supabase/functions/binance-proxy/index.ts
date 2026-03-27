@@ -1,3 +1,4 @@
+// Binance API Proxy v2 - Web Crypto HMAC signing
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
