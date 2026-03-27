@@ -204,6 +204,8 @@ const Index = () => {
                 toast.success(`Closed ${trade?.symbol || ""} paper position`);
               }
             }}
+            botActive={botActive}
+            onToggleBot={() => setBotActive(prev => !prev)}
           />
         )}
       </main>
