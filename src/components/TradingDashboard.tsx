@@ -131,6 +131,13 @@ const TradingDashboard = ({
               : "Activate Bot"}
           </button>
           <button
+            onClick={onClearData}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-loss transition-colors px-3 py-1.5 rounded-lg bg-secondary/50 hover:bg-loss/10"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Clear
+          </button>
+          <button
             onClick={() => setShowHistory(!showHistory)}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-secondary/50"
           >
