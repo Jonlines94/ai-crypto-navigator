@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Header from "@/components/Header";
 import TickerBar from "@/components/TickerBar";
 import TopPicksBanner from "@/components/TopPicksBanner";
