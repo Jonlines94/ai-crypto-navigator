@@ -45,6 +45,7 @@ const Index = () => {
   signalsLoadingRef.current = signalsLoading;
   const accountValueRef = useRef(accountValue);
   accountValueRef.current = accountValue;
+  const cycleSpentRef = useRef(0); // tracks cumulative USD spent in current bot cycle
 
   useEffect(() => {
     if (coins.length > 0 && predictions.length === 0 && !aiLoading) {
