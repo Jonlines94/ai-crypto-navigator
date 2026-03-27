@@ -192,6 +192,18 @@ const TradingDashboard = ({
                 Require manual approval before executing trades
               </label>
             </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={settings.autoCloseOnTarget}
+                onChange={(e) => onUpdateSettings({ autoCloseOnTarget: e.target.checked })}
+                className="rounded"
+                id="auto-close"
+              />
+              <label htmlFor="auto-close" className="text-xs text-foreground">
+                Auto-close trades when stop-loss or take-profit is hit
+              </label>
+            </div>
             {settings.mode === "live" && !settings.requireApproval && (
               <div className="flex items-center gap-2 p-2 bg-loss/10 border border-loss/20 rounded-lg">
                 <AlertTriangle className="w-4 h-4 text-loss" />
