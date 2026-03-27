@@ -18,21 +18,34 @@ async function hmacSign(queryString: string, secret: string): Promise<string> {
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function binanceReq(method: string, endpoint: string, params: Record<string, string> = {}, signed = false) {
+async function binanceReq(method: string, endpoint: string, params: Record<string, string> = {}, signed = false, retries = 2): Promise<any> {
   const apiKey = Deno.env.get("BINANCE_API_KEY");
   const apiSecret = Deno.env.get("BINANCE_API_SECRET");
   if (!apiKey || !apiSecret) throw new Error("Binance API keys not configured");
   const headers: Record<string, string> = { "X-MBX-APIKEY": apiKey };
-  if (signed) { params.timestamp = Date.now().toString(); params.recvWindow = "10000"; }
-  const qs = new URLSearchParams(params).toString();
-  let url: string;
-  if (signed) { const sig = await hmacSign(qs, apiSecret); url = `${BINANCE_BASE}${endpoint}?${qs}&signature=${sig}`; }
-  else { url = `${BINANCE_BASE}${endpoint}${qs ? `?${qs}` : ""}`; }
-  console.log(`Binance ${method} ${endpoint}`);
-  const resp = await fetch(url, { method, headers });
-  const data = await resp.json();
-  if (!resp.ok) { console.error(`Binance err ${resp.status}:`, JSON.stringify(data)); throw new Error(`Binance API [${resp.status}]: ${JSON.stringify(data)}`); }
-  return data;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const p = { ...params };
+      if (signed) { p.timestamp = Date.now().toString(); p.recvWindow = "10000"; }
+      const qs = new URLSearchParams(p).toString();
+      let url: string;
+      if (signed) { const sig = await hmacSign(qs, apiSecret); url = `${BINANCE_BASE}${endpoint}?${qs}&signature=${sig}`; }
+      else { url = `${BINANCE_BASE}${endpoint}${qs ? `?${qs}` : ""}`; }
+      console.log(`Binance ${method} ${endpoint} (attempt ${attempt + 1})`);
+      const resp = await fetch(url, { method, headers });
+      const data = await resp.json();
+      if (!resp.ok) { console.error(`Binance err ${resp.status}:`, JSON.stringify(data)); throw new Error(`Binance API [${resp.status}]: ${JSON.stringify(data)}`); }
+      return data;
+    } catch (e) {
+      if (attempt < retries && e instanceof Error && (e.message.includes("Connection reset") || e.message.includes("os error"))) {
+        console.warn(`Retrying after connection error (attempt ${attempt + 1}):`, e.message);
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
 }
 
 serve(async (req) => {
