@@ -181,28 +181,42 @@ const TradingDashboard = ({
       {/* Balances */}
       <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-primary" />
-            Binance Portfolio
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-primary" />
+              Binance Portfolio
+            </h3>
+            {accountValue && (
+              <span className="text-lg font-bold font-mono text-gain">${accountValue.totalUsd.toLocaleString()}</span>
+            )}
+          </div>
           <button
             onClick={onFetchBalances}
             disabled={balancesLoading}
             className="text-xs text-muted-foreground hover:text-primary transition-colors"
           >
-            {balancesLoading ? "Loading..." : "Refresh"}
+            {balancesLoading ? "Loading..." : "Refresh Balances"}
           </button>
         </div>
-        {balances.length > 0 ? (
+        {accountValue && accountValue.holdings.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {accountValue.holdings.map((h) => (
+              <div key={h.asset} className="bg-secondary/50 rounded-lg px-3 py-2 flex items-center gap-2">
+                <span className="text-sm font-bold text-foreground">{h.asset}</span>
+                <span className="text-sm font-mono text-muted-foreground">{h.total.toFixed(6)}</span>
+                {h.usdValue > 0 && <span className="text-xs font-mono text-gain">${h.usdValue.toLocaleString()}</span>}
+              </div>
+            ))}
+          </div>
+        ) : balances.length > 0 ? (
           <div className="flex flex-wrap gap-3">
             {balances.map((b) => (
               <div key={b.asset} className="bg-secondary/50 rounded-lg px-3 py-2 flex items-center gap-2">
                 <span className="text-sm font-bold text-foreground">{b.asset}</span>
                 <span className="text-sm font-mono text-muted-foreground">{parseFloat(b.free).toFixed(6)}</span>
-                {parseFloat(b.locked) > 0 && (
-                  <span className="text-[10px] font-mono text-warning">🔒 {parseFloat(b.locked).toFixed(6)}</span>
-                )}
               </div>
+            ))}
+          </div>
             ))}
           </div>
         ) : (
