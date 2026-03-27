@@ -18,7 +18,7 @@ import { toast } from "sonner";
 const Index = () => {
   const { coins, loading: coinsLoading, lastUpdated } = useCryptoData(30000);
   const { predictions, loading: aiLoading, error: aiError, generatePredictions } = useAiPredictions();
-  const { balances, loading: balancesLoading, fetchBalances, executeOrder } = useBinance();
+  const { balances, accountValue, loading: balancesLoading, fetchBalances, executeOrder, fetchAllTickers } = useBinance();
   const {
     signals, marketOutlook, loading: signalsLoading, error: signalsError,
     settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus,
