@@ -233,6 +233,7 @@ const Index = () => {
             }}
             botActive={botActive}
             onToggleBot={() => setBotActive(prev => !prev)}
+            onClearData={() => { setBotActive(false); clearAllData(); toast.success("All trades and history cleared"); }}
           />
         )}
       </main>
