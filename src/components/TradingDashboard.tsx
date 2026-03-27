@@ -215,6 +215,8 @@ const TradingDashboard = ({
                 <span className="text-sm font-bold text-foreground">{b.asset}</span>
                 <span className="text-sm font-mono text-muted-foreground">{parseFloat(b.free).toFixed(6)}</span>
               </div>
+            ))}
+          </div>
         ) : (
           <p className="text-xs text-muted-foreground">Click refresh to load your Binance balances</p>
         )}
