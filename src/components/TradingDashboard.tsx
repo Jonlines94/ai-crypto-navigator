@@ -421,14 +421,20 @@ const TradingDashboard = ({
 
       {/* Market Outlook + Generate */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           {marketOutlook && (
             <p className="text-sm text-muted-foreground italic">📊 {marketOutlook}</p>
+          )}
+          {botActive && (
+            <span className="flex items-center gap-1.5 text-[10px] font-mono text-gain bg-gain/10 px-2 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-gain animate-pulse" />
+              AUTO-TRADING · Scanning every 60s
+            </span>
           )}
         </div>
         <button
           onClick={onGenerateSignals}
-          disabled={loading}
+          disabled={loading || botActive}
           className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
