@@ -37,6 +37,12 @@ const Index = () => {
   } = useTradeSignals(handleAutoClose);
 
   const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
+  const [botActive, setBotActive] = useState(false);
+  const botIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const signalsRef = useRef(signals);
+  signalsRef.current = signals;
+  const signalsLoadingRef = useRef(signalsLoading);
+  signalsLoadingRef.current = signalsLoading;
 
   useEffect(() => {
     if (coins.length > 0 && predictions.length === 0 && !aiLoading) {
