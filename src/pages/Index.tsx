@@ -57,18 +57,29 @@ const Index = () => {
     try {
       const tradeValue = parseFloat(signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0");
 
-      // Check against actual account balance in live mode
-      if (settings.mode === "live" && accountValueRef.current) {
-        const available = accountValueRef.current.totalUsd;
-        // Subtract value of currently open trades
-        const openValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
-        const freeBalance = available - openValue;
-        if (tradeValue > freeBalance) {
-          toast.error(`⛔ Insufficient funds: trade needs $${tradeValue.toFixed(2)} but only $${freeBalance.toFixed(2)} available`);
-          updateSignalStatus(signal.id, "rejected");
-          return;
-        }
+      // Budget check — works in BOTH paper and live modes
+      const totalBalance = accountValueRef.current?.totalUsd || settings.accountBalance;
+      // Sum value of all currently open trades
+      const openValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
+      // Include cumulative spending from this bot cycle (trades opened this cycle aren't in activeTrades yet)
+      const freeBalance = totalBalance - openValue - cycleSpentRef.current;
+      
+      if (tradeValue > freeBalance) {
+        toast.error(`⛔ Insufficient funds: trade needs $${tradeValue.toFixed(2)} but only $${freeBalance.toFixed(2)} available`);
+        updateSignalStatus(signal.id, "rejected");
+        return;
       }
+
+      // Also enforce per-trade max
+      const maxPerTrade = settings.accountBalance * (settings.maxTradePercent / 100);
+      if (tradeValue > maxPerTrade) {
+        toast.error(`⛔ Trade $${tradeValue.toFixed(2)} exceeds per-trade max $${maxPerTrade.toFixed(2)}`);
+        updateSignalStatus(signal.id, "rejected");
+        return;
+      }
+
+      // Track this trade's value for the current cycle
+      cycleSpentRef.current += tradeValue;
 
       if (settings.mode === "paper") {
         const entryPrice = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
@@ -82,7 +93,7 @@ const Index = () => {
           type: signal.type,
           quantity: signal.quantity,
           price: signal.limitPrice,
-          maxTradeUsd: settings.accountBalance * (settings.maxTradePercent / 100),
+          maxTradeUsd: maxPerTrade,
         });
         const entryPrice = parseFloat(result?.fills?.[0]?.price || signal.entryPrice?.replace(/[^0-9.]/g, "") || "0");
         openTrade(signal, entryPrice, false);
