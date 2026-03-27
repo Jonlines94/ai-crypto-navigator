@@ -13,7 +13,7 @@ export function useBinance() {
   const [error, setError] = useState<string | null>(null);
 
   const callBinance = useCallback(async (action: string, params?: Record<string, any>) => {
-    const { data, error: fnError } = await supabase.functions.invoke("binance-api", {
+    const { data, error: fnError } = await supabase.functions.invoke("binance-proxy", {
       body: { action, params },
     });
     if (fnError) throw new Error(fnError.message);
