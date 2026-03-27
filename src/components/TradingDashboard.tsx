@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import {
   Bot, Shield, ShieldAlert, TrendingUp, TrendingDown, Check, X,
   Play, Loader2, AlertTriangle, DollarSign, Settings, History,
@@ -56,6 +57,24 @@ const TradingDashboard = ({
   // Active trades P&L summary
   const totalActivePnl = activeTrades.reduce((sum, t) => sum + t.pnl, 0);
   const totalActiveValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
+
+  // Cumulative P&L chart data
+  const pnlChartData = useMemo(() => {
+    const executed = tradeHistory
+      .filter(t => t.status === "executed" && t.executionResult?.pnl != null)
+      .sort((a, b) => new Date(a.executedAt || 0).getTime() - new Date(b.executedAt || 0).getTime());
+    let cumulative = 0;
+    return executed.map(t => {
+      cumulative += t.executionResult.pnl;
+      return {
+        time: t.executedAt ? new Date(t.executedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "",
+        pnl: Math.round(cumulative * 100) / 100,
+        trade: `${t.side} ${t.symbol}`,
+        tradePnl: t.executionResult.pnl,
+      };
+    });
+  }, [tradeHistory]);
+  const totalCumulativePnl = pnlChartData.length > 0 ? pnlChartData[pnlChartData.length - 1].pnl : 0;
 
   return (
     <section className="space-y-6">
@@ -529,6 +548,55 @@ const TradingDashboard = ({
                 )}
               </motion.div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cumulative P&L Chart */}
+      {pnlChartData.length >= 2 && (
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              Cumulative P&L
+            </h3>
+            <span className={`text-lg font-bold font-mono ${totalCumulativePnl >= 0 ? "text-gain" : "text-loss"}`}>
+              {totalCumulativePnl >= 0 ? "+" : ""}${totalCumulativePnl.toFixed(2)}
+            </span>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={pnlChartData}>
+                <defs>
+                  <linearGradient id="pnlGradientPos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--gain))" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="hsl(var(--gain))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="pnlGradientNeg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--loss))" stopOpacity={0} />
+                    <stop offset="100%" stopColor="hsl(var(--loss))" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} width={50} />
+                <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                  formatter={(value: number, _: string, props: any) => [
+                    `$${value.toFixed(2)}`,
+                    `Cumulative (${props.payload.trade}: ${props.payload.tradePnl >= 0 ? "+" : ""}$${props.payload.tradePnl.toFixed(2)})`,
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="pnl"
+                  stroke={totalCumulativePnl >= 0 ? "hsl(var(--gain))" : "hsl(var(--loss))"}
+                  strokeWidth={2}
+                  fill={totalCumulativePnl >= 0 ? "url(#pnlGradientPos)" : "url(#pnlGradientNeg)"}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
