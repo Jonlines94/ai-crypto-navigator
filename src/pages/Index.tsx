@@ -1,16 +1,23 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Header from "@/components/Header";
+import TickerBar from "@/components/TickerBar";
+import TrendingInsights from "@/components/TrendingInsights";
+import AiPredictions from "@/components/AiPredictions";
+import ExchangeFlows from "@/components/ExchangeFlows";
+import TransfersFeed from "@/components/TransfersFeed";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
-  return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
-  );
-};
-
-const Index = PlaceholderIndex;
+const Index = () => (
+  <div className="min-h-screen bg-background">
+    <Header />
+    <TickerBar />
+    <main className="max-w-[1440px] mx-auto px-4 py-6 space-y-8">
+      <AiPredictions />
+      <TrendingInsights />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <ExchangeFlows />
+        <TransfersFeed />
+      </div>
+    </main>
+  </div>
+);
 
 export default Index;
