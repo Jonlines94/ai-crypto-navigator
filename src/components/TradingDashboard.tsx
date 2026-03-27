@@ -353,7 +353,7 @@ const TradingDashboard = ({
                         )}
                       </div>
                       <span className="text-[10px] text-muted-foreground">
-                        {parseFloat(trade.quantity).toFixed(6)} @ ${trade.entryPrice.toFixed(2)}
+                        {parseFloat(trade.quantity).toFixed(6)} @ {fmtPrice(trade.entryPrice)}
                       </span>
                     </div>
                   </div>
