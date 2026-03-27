@@ -271,10 +271,18 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     closeTradeInternal(tradeId, "Closed manually");
   }, [closeTradeInternal]);
 
-  const getMaxTradeAmount = useCallback((accountBalance: number) => {
-    const fromPercent = accountBalance * (settings.maxTradePercent / 100);
-    return Math.min(fromPercent, settings.maxTradeUsd);
-  }, [settings.maxTradePercent, settings.maxTradeUsd]);
+  const getMaxTradeAmount = useCallback(() => {
+    return settings.accountBalance * (settings.maxTradePercent / 100);
+  }, [settings.maxTradePercent, settings.accountBalance]);
+
+  const clearAllData = useCallback(() => {
+    setSignals([]);
+    setActiveTrades([]);
+    setTradeHistory([]);
+    setMarketOutlook("");
+    localStorage.removeItem("active-trades");
+    localStorage.removeItem("trade-history");
+  }, []);
 
   const updateSignalStatus = useCallback((id: string, status: TradeSignal["status"], result?: any) => {
     setSignals((prev) => {
