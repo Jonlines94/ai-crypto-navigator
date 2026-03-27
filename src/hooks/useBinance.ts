@@ -7,8 +7,20 @@ export interface BinanceBalance {
   locked: string;
 }
 
+export interface AccountValue {
+  totalUsd: number;
+  holdings: Array<{
+    asset: string;
+    free: string;
+    locked: string;
+    total: number;
+    usdValue: number;
+  }>;
+}
+
 export function useBinance() {
   const [balances, setBalances] = useState<BinanceBalance[]>([]);
+  const [accountValue, setAccountValue] = useState<AccountValue | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,9 +37,11 @@ export function useBinance() {
     setLoading(true);
     setError(null);
     try {
-      const result = await callBinance("balances");
-      setBalances(result);
+      const result = await callBinance("account_value");
+      setAccountValue(result);
+      setBalances(result.holdings.map((h: any) => ({ asset: h.asset, free: h.free, locked: h.locked })));
     } catch (err) {
+      console.error("Binance error:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch balances");
     } finally {
       setLoading(false);
@@ -54,5 +68,9 @@ export function useBinance() {
     });
   }, [callBinance]);
 
-  return { balances, loading, error, fetchBalances, executeOrder, callBinance };
+  const fetchAllTickers = useCallback(async () => {
+    return callBinance("all_tickers");
+  }, [callBinance]);
+
+  return { balances, accountValue, loading, error, fetchBalances, executeOrder, callBinance, fetchAllTickers };
 }
