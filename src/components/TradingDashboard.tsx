@@ -58,6 +58,24 @@ const TradingDashboard = ({
   const totalActivePnl = activeTrades.reduce((sum, t) => sum + t.pnl, 0);
   const totalActiveValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
 
+  // Cumulative P&L chart data
+  const pnlChartData = useMemo(() => {
+    const executed = tradeHistory
+      .filter(t => t.status === "executed" && t.executionResult?.pnl != null)
+      .sort((a, b) => new Date(a.executedAt || 0).getTime() - new Date(b.executedAt || 0).getTime());
+    let cumulative = 0;
+    return executed.map(t => {
+      cumulative += t.executionResult.pnl;
+      return {
+        time: t.executedAt ? new Date(t.executedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "",
+        pnl: Math.round(cumulative * 100) / 100,
+        trade: `${t.side} ${t.symbol}`,
+        tradePnl: t.executionResult.pnl,
+      };
+    });
+  }, [tradeHistory]);
+  const totalCumulativePnl = pnlChartData.length > 0 ? pnlChartData[pnlChartData.length - 1].pnl : 0;
+
   return (
     <section className="space-y-6">
       {/* Mode Banner */}
