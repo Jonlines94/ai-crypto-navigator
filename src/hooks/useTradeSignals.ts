@@ -184,7 +184,7 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     };
 
     updatePrices();
-    priceIntervalRef.current = setInterval(updatePrices, 5000);
+    priceIntervalRef.current = setInterval(updatePrices, 15000);
     return () => { if (priceIntervalRef.current) clearInterval(priceIntervalRef.current); };
   }, [activeTrades.length, closeTradeInternal]);
 
