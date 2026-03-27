@@ -317,5 +317,6 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     openTrade,
     closeTrade,
     getMaxTradeAmount,
+    clearAllData,
   };
 }
