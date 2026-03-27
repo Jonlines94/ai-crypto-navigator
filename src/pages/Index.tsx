@@ -223,7 +223,7 @@ const Index = () => {
               const trade = activeTrades.find(t => t.id === tradeId);
               if (trade && !trade.paper && settings.mode === "live") {
                 const closeSide = trade.side === "BUY" ? "SELL" : "BUY";
-                executeOrder({ symbol: trade.symbol, side: closeSide, type: "MARKET", quantity: trade.quantity, maxTradeUsd: settings.maxTradeUsd * 2 })
+                executeOrder({ symbol: trade.symbol, side: closeSide, type: "MARKET", quantity: trade.quantity, maxTradeUsd: settings.accountBalance * 2 })
                   .then(() => { closeTrade(tradeId); toast.success(`Closed ${trade.symbol} position`); })
                   .catch((err) => toast.error(`Failed to close: ${err.message}`));
               } else {

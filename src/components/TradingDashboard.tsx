@@ -107,8 +107,8 @@ const TradingDashboard = ({
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {settings.mode === "live"
-                ? `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · ${settings.stopLossPct}% SL · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
-                : `Max $${settings.maxTradeUsd}/trade · ${settings.maxTradePercent}% of balance · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`}
+                ? `Balance $${settings.accountBalance} · ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}% · Auto-close ${settings.autoCloseOnTarget ? "ON" : "OFF"}`
+                : `Balance $${settings.accountBalance} · ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}%`}
             </p>
           </div>
         </div>
