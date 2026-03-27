@@ -222,10 +222,11 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
           portfolio: portfolio.length > 0 ? portfolio : undefined,
           activeTrades: activeTrades.length > 0 ? activeTrades : undefined,
           settings: {
-            maxTradeUsd: settings.maxTradeUsd,
+            maxTradeUsd: settings.accountBalance * (settings.maxTradePercent / 100),
             riskLevel: settings.riskLevel,
             stopLossPct: settings.stopLossPct,
-            totalBalanceUsd: totalBalanceUsd || 0,
+            takeProfitPct: settings.takeProfitPct,
+            totalBalanceUsd: totalBalanceUsd || settings.accountBalance,
           },
         },
       });
