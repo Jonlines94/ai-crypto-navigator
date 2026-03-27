@@ -20,9 +20,10 @@ const Index = () => {
   const { predictions, loading: aiLoading, error: aiError, generatePredictions } = useAiPredictions();
   const { balances, accountValue, loading: balancesLoading, fetchBalances, executeOrder, fetchAllTickers } = useBinance();
   const handleAutoClose = useCallback((trade: any) => {
-    if (!trade.paper && settings?.mode === "live") {
+    // settings not available here yet, check trade.paper instead
+    if (!trade.paper) {
       const closeSide = trade.side === "BUY" ? "SELL" : "BUY";
-      executeOrder({ symbol: trade.symbol, side: closeSide as "BUY" | "SELL", type: "MARKET", quantity: trade.quantity, maxTradeUsd: (settings?.maxTradeUsd || 100) * 2 })
+      executeOrder({ symbol: trade.symbol, side: closeSide as "BUY" | "SELL", type: "MARKET", quantity: trade.quantity, maxTradeUsd: 10000 })
         .then(() => toast.success(`🎯 Auto-closed ${trade.symbol}: ${trade.pnl >= 0 ? "Profit" : "Loss"} $${Math.abs(trade.pnl).toFixed(2)}`))
         .catch((err) => toast.error(`Failed to auto-close ${trade.symbol}: ${err.message}`));
     } else {
@@ -30,8 +31,6 @@ const Index = () => {
     }
   }, [executeOrder]);
 
-  // We need settings before useTradeSignals, but useTradeSignals provides settings.
-  // So we pass the callback that uses executeOrder
   const {
     signals, activeTrades, marketOutlook, loading: signalsLoading, error: signalsError,
     settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade, getMaxTradeAmount,
