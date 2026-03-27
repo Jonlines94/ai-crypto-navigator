@@ -14,6 +14,7 @@ interface TradingDashboardProps {
   error: string | null;
   settings: TradingSettings;
   tradeHistory: TradeSignal[];
+  accountValue: AccountValue | null;
   balances: BinanceBalance[];
   balancesLoading: boolean;
   onGenerateSignals: () => void;
