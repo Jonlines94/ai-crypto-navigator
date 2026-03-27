@@ -33,7 +33,7 @@ const Index = () => {
 
   const {
     signals, activeTrades, marketOutlook, loading: signalsLoading, error: signalsError,
-    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade, getMaxTradeAmount,
+    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade, getMaxTradeAmount, clearAllData,
   } = useTradeSignals(handleAutoClose);
 
   const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
