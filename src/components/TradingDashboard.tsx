@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import {
   Bot, Shield, ShieldAlert, TrendingUp, TrendingDown, Check, X,
   Play, Loader2, AlertTriangle, DollarSign, Settings, History,
-  XCircle, ArrowUpRight, ArrowDownRight, Power,
+  XCircle, ArrowUpRight, ArrowDownRight, Power, Trash2,
 } from "lucide-react";
 import type { TradeSignal, TradingSettings, ActiveTrade } from "@/hooks/useTradeSignals";
 import type { BinanceBalance, AccountValue } from "@/hooks/useBinance";
