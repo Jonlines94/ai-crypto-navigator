@@ -130,15 +130,30 @@ const TradingDashboard = ({
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Trade (USD)</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (USD)</label>
                 <input
                   type="number"
                   value={settings.maxTradeUsd}
                   onChange={(e) => onUpdateSettings({ maxTradeUsd: Number(e.target.value) })}
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
-                  min={10}
+                  min={5}
                   max={10000}
                 />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (%)</label>
+                <input
+                  type="number"
+                  value={settings.maxTradePercent}
+                  onChange={(e) => onUpdateSettings({ maxTradePercent: Number(e.target.value) })}
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
+                  min={1}
+                  max={50}
+                  step={1}
+                />
+                <span className="text-[9px] text-muted-foreground mt-0.5 block">
+                  e.g. $300 balance × {settings.maxTradePercent}% = ${(300 * settings.maxTradePercent / 100).toFixed(0)} max
+                </span>
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Risk Level</label>
