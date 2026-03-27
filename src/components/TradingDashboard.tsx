@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import {
   Bot, Shield, ShieldAlert, TrendingUp, TrendingDown, Check, X,
   Play, Loader2, AlertTriangle, DollarSign, Settings, History,
