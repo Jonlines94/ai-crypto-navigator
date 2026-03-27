@@ -28,6 +28,7 @@ interface TradingDashboardProps {
   onCloseTrade: (tradeId: string) => void;
   botActive: boolean;
   onToggleBot: () => void;
+  onClearData: () => void;
 }
 
 const TradingDashboard = ({
