@@ -50,37 +50,6 @@ const Index = () => {
     }
   }, [coins]);
 
-  // Autonomous bot loop
-  useEffect(() => {
-    if (!botActive) {
-      if (botIntervalRef.current) { clearInterval(botIntervalRef.current); botIntervalRef.current = null; }
-      return;
-    }
-
-    const runCycle = () => {
-      // Auto-approve pending signals with confidence >= 60
-      const pending = signalsRef.current.filter(s => s.status === "pending");
-      if (pending.length > 0) {
-        for (const signal of pending) {
-          if (signal.confidence >= 60) {
-            handleApprove(signal);
-          } else {
-            handleReject(signal.id);
-          }
-        }
-      }
-      // Generate new signals if none pending and not loading
-      if (pending.length === 0 && !signalsLoadingRef.current && coins.length > 0) {
-        generateSignals(coins, balances);
-      }
-    };
-
-    // Run immediately then every 60s
-    runCycle();
-    botIntervalRef.current = setInterval(runCycle, 60000);
-    return () => { if (botIntervalRef.current) clearInterval(botIntervalRef.current); };
-  }, [botActive, coins, balances, generateSignals, handleApprove, handleReject]);
-
   const handleApprove = useCallback(async (signal: any) => {
     try {
       if (settings.mode === "paper") {
@@ -113,6 +82,33 @@ const Index = () => {
     toast.info("Trade signal skipped");
   }, [updateSignalStatus]);
 
+  // Autonomous bot loop
+  useEffect(() => {
+    if (!botActive) {
+      if (botIntervalRef.current) { clearInterval(botIntervalRef.current); botIntervalRef.current = null; }
+      return;
+    }
+
+    const runCycle = () => {
+      const pending = signalsRef.current.filter(s => s.status === "pending");
+      if (pending.length > 0) {
+        for (const signal of pending) {
+          if (signal.confidence >= 60) {
+            handleApprove(signal);
+          } else {
+            handleReject(signal.id);
+          }
+        }
+      }
+      if (pending.length === 0 && !signalsLoadingRef.current && coins.length > 0) {
+        generateSignals(coins, balances);
+      }
+    };
+
+    runCycle();
+    botIntervalRef.current = setInterval(runCycle, 60000);
+    return () => { if (botIntervalRef.current) clearInterval(botIntervalRef.current); };
+  }, [botActive, coins, balances, generateSignals, handleApprove, handleReject]);
   return (
     <div className="min-h-screen bg-background">
       <Header />
