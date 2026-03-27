@@ -127,12 +127,17 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     const updatePrices = async () => {
       try {
         const symbols = [...new Set(activeTrades.map(t => t.symbol))];
+        if (symbols.length === 0) return;
+        
+        // Batch: fetch all prices in one call instead of per-symbol
+        const { data } = await supabase.functions.invoke("binance-proxy", {
+          body: { action: "price" },
+        });
         const prices: Record<string, number> = {};
-        for (const sym of symbols) {
-          const { data } = await supabase.functions.invoke("binance-proxy", {
-            body: { action: "price", params: { symbol: sym } },
-          });
-          if (data?.success && data.data?.price) prices[sym] = parseFloat(data.data.price);
+        if (data?.success && Array.isArray(data.data)) {
+          for (const p of data.data) {
+            if (symbols.includes(p.symbol)) prices[p.symbol] = parseFloat(p.price);
+          }
         }
 
         setActiveTrades(prev => {
