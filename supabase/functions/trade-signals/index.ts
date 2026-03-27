@@ -24,6 +24,7 @@ serve(async (req) => {
     const maxTradeUsd = settings?.maxTradeUsd || 100;
     const riskLevel = settings?.riskLevel || "medium";
     const stopLossPct = settings?.stopLossPct || 5;
+    const totalBalanceUsd = settings?.totalBalanceUsd || 0;
 
     const marketSummary = coins.map((c: any) =>
       `${c.name} (${c.symbol}): Price $${c.price}, 24h change ${c.change24h}%, Volume $${c.volume}, High $${c.high24h}, Low $${c.low24h}, Market Cap $${c.marketCap}`
