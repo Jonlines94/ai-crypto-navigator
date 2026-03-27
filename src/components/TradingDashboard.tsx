@@ -9,6 +9,16 @@ import {
 import type { TradeSignal, TradingSettings, ActiveTrade } from "@/hooks/useTradeSignals";
 import type { BinanceBalance, AccountValue } from "@/hooks/useBinance";
 
+// Smart price formatter: uses more decimals for small prices
+const fmtPrice = (v: number) => {
+  if (v === 0) return "$0";
+  const abs = Math.abs(v);
+  if (abs >= 1) return `$${v.toFixed(2)}`;
+  if (abs >= 0.01) return `$${v.toFixed(4)}`;
+  if (abs >= 0.0001) return `$${v.toFixed(6)}`;
+  return `$${v.toFixed(8)}`;
+};
+
 interface TradingDashboardProps {
   signals: TradeSignal[];
   activeTrades: ActiveTrade[];
