@@ -223,6 +223,7 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
             maxTradeUsd: settings.maxTradeUsd,
             riskLevel: settings.riskLevel,
             stopLossPct: settings.stopLossPct,
+            totalBalanceUsd: totalBalanceUsd || 0,
           },
         },
       });
