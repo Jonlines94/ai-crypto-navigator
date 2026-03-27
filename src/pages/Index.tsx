@@ -43,6 +43,8 @@ const Index = () => {
   signalsRef.current = signals;
   const signalsLoadingRef = useRef(signalsLoading);
   signalsLoadingRef.current = signalsLoading;
+  const accountValueRef = useRef(accountValue);
+  accountValueRef.current = accountValue;
 
   useEffect(() => {
     if (coins.length > 0 && predictions.length === 0 && !aiLoading) {
