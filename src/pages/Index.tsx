@@ -126,7 +126,7 @@ const Index = () => {
         }
       }
       if (pending.length === 0 && !signalsLoadingRef.current && coins.length > 0) {
-        generateSignals(coins, balances);
+        generateSignals(coins, balances, accountValueRef.current?.totalUsd);
       }
     };
 
