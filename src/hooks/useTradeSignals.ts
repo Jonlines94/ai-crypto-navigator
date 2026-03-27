@@ -38,20 +38,22 @@ export interface ActiveTrade {
 
 export interface TradingSettings {
   mode: "paper" | "live";
-  maxTradeUsd: number;
+  accountBalance: number;
   maxTradePercent: number;
   riskLevel: "conservative" | "medium" | "aggressive";
   stopLossPct: number;
+  takeProfitPct: number;
   requireApproval: boolean;
   autoCloseOnTarget: boolean;
 }
 
 const DEFAULT_SETTINGS: TradingSettings = {
   mode: "paper",
-  maxTradeUsd: 100,
+  accountBalance: 300,
   maxTradePercent: 10,
   riskLevel: "medium",
   stopLossPct: 5,
+  takeProfitPct: 10,
   requireApproval: true,
   autoCloseOnTarget: true,
 };
