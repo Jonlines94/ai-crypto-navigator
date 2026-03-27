@@ -168,18 +168,18 @@ const TradingDashboard = ({
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (USD)</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Account Balance (USD)</label>
                 <input
                   type="number"
-                  value={settings.maxTradeUsd}
-                  onChange={(e) => onUpdateSettings({ maxTradeUsd: Number(e.target.value) })}
+                  value={settings.accountBalance}
+                  onChange={(e) => onUpdateSettings({ accountBalance: Number(e.target.value) })}
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
-                  min={5}
-                  max={10000}
+                  min={1}
+                  max={1000000}
                 />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Max Per Trade (%)</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Per Trade (%)</label>
                 <input
                   type="number"
                   value={settings.maxTradePercent}
@@ -190,7 +190,7 @@ const TradingDashboard = ({
                   step={1}
                 />
                 <span className="text-[9px] text-muted-foreground mt-0.5 block">
-                  e.g. $300 balance × {settings.maxTradePercent}% = ${(300 * settings.maxTradePercent / 100).toFixed(0)} max
+                  ${settings.accountBalance} × {settings.maxTradePercent}% = ${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)} max/trade
                 </span>
               </div>
               <div>
@@ -214,6 +214,18 @@ const TradingDashboard = ({
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
                   min={1}
                   max={20}
+                  step={0.5}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">Take Profit %</label>
+                <input
+                  type="number"
+                  value={settings.takeProfitPct}
+                  onChange={(e) => onUpdateSettings({ takeProfitPct: Number(e.target.value) })}
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono text-foreground"
+                  min={1}
+                  max={50}
                   step={0.5}
                 />
               </div>
