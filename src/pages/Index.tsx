@@ -20,8 +20,8 @@ const Index = () => {
   const { predictions, loading: aiLoading, error: aiError, generatePredictions } = useAiPredictions();
   const { balances, accountValue, loading: balancesLoading, fetchBalances, executeOrder, fetchAllTickers } = useBinance();
   const {
-    signals, marketOutlook, loading: signalsLoading, error: signalsError,
-    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus,
+    signals, activeTrades, marketOutlook, loading: signalsLoading, error: signalsError,
+    settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade,
   } = useTradeSignals();
 
   const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
@@ -35,11 +35,11 @@ const Index = () => {
   const handleApprove = useCallback(async (signal: any) => {
     try {
       if (settings.mode === "paper") {
-        // Paper trade — just log it
+        const entryPrice = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
+        openTrade(signal, entryPrice || 0, true);
         updateSignalStatus(signal.id, "executed", { paper: true, timestamp: new Date().toISOString() });
-        toast.success(`📝 Paper trade: ${signal.side} ${signal.quantity} ${signal.symbol}`);
+        toast.success(`📝 Paper trade opened: ${signal.side} ${signal.quantity} ${signal.symbol}`);
       } else {
-        // Live trade
         const result = await executeOrder({
           symbol: signal.symbol,
           side: signal.side,
@@ -48,6 +48,8 @@ const Index = () => {
           price: signal.limitPrice,
           maxTradeUsd: settings.maxTradeUsd,
         });
+        const entryPrice = parseFloat(result?.fills?.[0]?.price || signal.entryPrice?.replace(/[^0-9.]/g, "") || "0");
+        openTrade(signal, entryPrice, false);
         updateSignalStatus(signal.id, "executed", result);
         toast.success(`✅ Trade executed: ${signal.side} ${signal.quantity} ${signal.symbol}`);
       }
@@ -55,7 +57,7 @@ const Index = () => {
       updateSignalStatus(signal.id, "failed", { error: err instanceof Error ? err.message : "Unknown error" });
       toast.error(`❌ Trade failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
-  }, [settings, executeOrder, updateSignalStatus]);
+  }, [settings, executeOrder, updateSignalStatus, openTrade]);
 
   const handleReject = useCallback((id: string) => {
     updateSignalStatus(id, "rejected");
@@ -131,6 +133,7 @@ const Index = () => {
         ) : (
           <TradingDashboard
             signals={signals}
+            activeTrades={activeTrades}
             marketOutlook={marketOutlook}
             loading={signalsLoading}
             error={signalsError}
@@ -144,6 +147,18 @@ const Index = () => {
             onApprove={handleApprove}
             onReject={handleReject}
             onFetchBalances={fetchBalances}
+            onCloseTrade={(tradeId) => {
+              const trade = activeTrades.find(t => t.id === tradeId);
+              if (trade && !trade.paper && settings.mode === "live") {
+                const closeSide = trade.side === "BUY" ? "SELL" : "BUY";
+                executeOrder({ symbol: trade.symbol, side: closeSide, type: "MARKET", quantity: trade.quantity, maxTradeUsd: settings.maxTradeUsd * 2 })
+                  .then(() => { closeTrade(tradeId); toast.success(`Closed ${trade.symbol} position`); })
+                  .catch((err) => toast.error(`Failed to close: ${err.message}`));
+              } else {
+                closeTrade(tradeId);
+                toast.success(`Closed ${trade?.symbol || ""} paper position`);
+              }
+            }}
           />
         )}
       </main>

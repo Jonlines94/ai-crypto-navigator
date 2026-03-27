@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bot, Shield, ShieldAlert, TrendingUp, TrendingDown, Check, X,
   Play, Loader2, AlertTriangle, DollarSign, Settings, History,
+  XCircle, ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
-import type { TradeSignal, TradingSettings } from "@/hooks/useTradeSignals";
+import type { TradeSignal, TradingSettings, ActiveTrade } from "@/hooks/useTradeSignals";
 import type { BinanceBalance, AccountValue } from "@/hooks/useBinance";
 
 interface TradingDashboardProps {
   signals: TradeSignal[];
+  activeTrades: ActiveTrade[];
   marketOutlook: string;
   loading: boolean;
   error: string | null;
@@ -22,10 +24,12 @@ interface TradingDashboardProps {
   onApprove: (signal: TradeSignal) => void;
   onReject: (id: string) => void;
   onFetchBalances: () => void;
+  onCloseTrade: (tradeId: string) => void;
 }
 
 const TradingDashboard = ({
   signals = [],
+  activeTrades = [],
   marketOutlook,
   loading,
   error,
@@ -39,14 +43,19 @@ const TradingDashboard = ({
   onApprove,
   onReject,
   onFetchBalances,
+  onCloseTrade,
 }: TradingDashboardProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [confirmingTrade, setConfirmingTrade] = useState<string | null>(null);
+  const [closingTrade, setClosingTrade] = useState<string | null>(null);
 
-  // P&L from history
   const totalTrades = tradeHistory.filter((t) => t.status === "executed").length;
   const recentTrades = tradeHistory.slice(0, 10);
+
+  // Active trades P&L summary
+  const totalActivePnl = activeTrades.reduce((sum, t) => sum + t.pnl, 0);
+  const totalActiveValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
 
   return (
     <section className="space-y-6">
@@ -177,6 +186,133 @@ const TradingDashboard = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Active Trades - Live P&L */}
+      {activeTrades.length > 0 && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                Open Positions ({activeTrades.length})
+              </h3>
+              <span className={`text-lg font-bold font-mono ${totalActivePnl >= 0 ? "text-gain" : "text-loss"}`}>
+                {totalActivePnl >= 0 ? "+" : ""}${totalActivePnl.toFixed(2)}
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                Value: ${totalActiveValue.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-gain animate-pulse" />
+              <span className="text-[10px] font-mono text-muted-foreground">LIVE</span>
+            </div>
+          </div>
+          <div className="divide-y divide-border/50">
+            {activeTrades.map((trade) => (
+              <div key={trade.id} className="p-4 hover:bg-secondary/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {trade.side === "BUY" ? (
+                      <ArrowUpRight className="w-5 h-5 text-gain" />
+                    ) : (
+                      <ArrowDownRight className="w-5 h-5 text-loss" />
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-foreground">{trade.symbol}</span>
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                          trade.side === "BUY" ? "bg-gain/15 text-gain" : "bg-loss/15 text-loss"
+                        }`}>
+                          {trade.side}
+                        </span>
+                        {trade.paper && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary">PAPER</span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {parseFloat(trade.quantity).toFixed(6)} @ ${trade.entryPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    {/* Current Price */}
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground">Current</div>
+                      <div className="text-sm font-mono font-semibold text-foreground">${trade.currentPrice.toFixed(2)}</div>
+                    </div>
+
+                    {/* P&L */}
+                    <div className="text-right min-w-[100px]">
+                      <div className={`text-sm font-mono font-bold ${trade.pnl >= 0 ? "text-gain" : "text-loss"}`}>
+                        {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
+                      </div>
+                      <div className={`text-xs font-mono ${trade.pnlPercent >= 0 ? "text-gain" : "text-loss"}`}>
+                        {trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%
+                      </div>
+                    </div>
+
+                    {/* SL / TP */}
+                    <div className="text-right hidden md:block">
+                      <div className="text-[10px] text-muted-foreground">SL: <span className="text-loss font-mono">${trade.stopLoss.toFixed(2)}</span></div>
+                      <div className="text-[10px] text-muted-foreground">TP: <span className="text-gain font-mono">${trade.takeProfit.toFixed(2)}</span></div>
+                    </div>
+
+                    {/* Close Button */}
+                    {closingTrade === trade.id ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => { onCloseTrade(trade.id); setClosingTrade(null); }}
+                          className="text-[10px] font-semibold px-2 py-1 rounded bg-loss/20 text-loss hover:bg-loss/30 transition-colors"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setClosingTrade(null)}
+                          className="text-[10px] px-2 py-1 rounded bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setClosingTrade(trade.id)}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-loss px-3 py-1.5 rounded-lg bg-secondary/50 hover:bg-loss/10 transition-colors"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        Close
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress bar showing position between SL and TP */}
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-[9px] font-mono text-loss">SL</span>
+                  <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden relative">
+                    {(() => {
+                      const range = trade.takeProfit - trade.stopLoss;
+                      const pos = range > 0 ? ((trade.currentPrice - trade.stopLoss) / range) * 100 : 50;
+                      const clamped = Math.max(0, Math.min(100, pos));
+                      return (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-r from-loss/30 via-muted/20 to-gain/30 rounded-full" />
+                          <div
+                            className={`absolute top-0 h-full w-1.5 rounded-full ${trade.pnl >= 0 ? "bg-gain" : "bg-loss"}`}
+                            style={{ left: `${clamped}%`, transform: "translateX(-50%)" }}
+                          />
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <span className="text-[9px] font-mono text-gain">TP</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Balances */}
       <div className="bg-card border border-border rounded-xl p-5">
@@ -318,7 +454,6 @@ const TradingDashboard = ({
                   {signal.reasoning}
                 </p>
 
-                {/* Actions */}
                 {confirmingTrade === signal.id ? (
                   <div className="bg-loss/10 border border-loss/20 rounded-lg p-3">
                     <p className="text-xs text-loss font-semibold mb-2">
@@ -397,6 +532,7 @@ const TradingDashboard = ({
                       <th className="text-left py-2 px-4 font-semibold">Side</th>
                       <th className="text-right py-2 px-4 font-semibold">Qty</th>
                       <th className="text-right py-2 px-4 font-semibold">Value</th>
+                      <th className="text-right py-2 px-4 font-semibold">P&L</th>
                       <th className="text-right py-2 px-4 font-semibold">Status</th>
                     </tr>
                   </thead>
@@ -414,6 +550,13 @@ const TradingDashboard = ({
                         </td>
                         <td className="text-right py-2 px-4 font-mono text-foreground">{t.quantity}</td>
                         <td className="text-right py-2 px-4 font-mono text-foreground">{t.estimatedValueUsd}</td>
+                        <td className="text-right py-2 px-4 font-mono">
+                          {t.executionResult?.pnl != null ? (
+                            <span className={t.executionResult.pnl >= 0 ? "text-gain" : "text-loss"}>
+                              {t.executionResult.pnl >= 0 ? "+" : ""}${t.executionResult.pnl.toFixed(2)}
+                            </span>
+                          ) : "—"}
+                        </td>
                         <td className="text-right py-2 px-4">
                           <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
                             t.status === "executed" ? "bg-gain/15 text-gain" :
