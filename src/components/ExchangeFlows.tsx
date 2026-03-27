@@ -5,7 +5,7 @@ interface ExchangeFlowsProps {
   loading: boolean;
 }
 
-const ExchangeFlows = ({ coins, loading }: ExchangeFlowsProps) => (
+const ExchangeFlows = ({ coins = [], loading }: ExchangeFlowsProps) => (
   <section>
     <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-4">
       Market Overview

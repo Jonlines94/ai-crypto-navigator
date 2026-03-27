@@ -4,8 +4,8 @@ interface TrendingInsightsProps {
   coins: CoinData[];
 }
 
-const TrendingInsights = ({ coins }: TrendingInsightsProps) => {
-  if (coins.length === 0) return null;
+const TrendingInsights = ({ coins = [] }: TrendingInsightsProps) => {
+  if (!coins || coins.length === 0) return null;
 
   const insights = generateInsights(coins);
 
