@@ -43,6 +43,8 @@ const Index = () => {
   signalsRef.current = signals;
   const signalsLoadingRef = useRef(signalsLoading);
   signalsLoadingRef.current = signalsLoading;
+  const accountValueRef = useRef(accountValue);
+  accountValueRef.current = accountValue;
 
   useEffect(() => {
     if (coins.length > 0 && predictions.length === 0 && !aiLoading) {
@@ -52,6 +54,21 @@ const Index = () => {
 
   const handleApprove = useCallback(async (signal: any) => {
     try {
+      const tradeValue = parseFloat(signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0");
+
+      // Check against actual account balance in live mode
+      if (settings.mode === "live" && accountValueRef.current) {
+        const available = accountValueRef.current.totalUsd;
+        // Subtract value of currently open trades
+        const openValue = activeTrades.reduce((sum, t) => sum + parseFloat(t.quantity) * t.currentPrice, 0);
+        const freeBalance = available - openValue;
+        if (tradeValue > freeBalance) {
+          toast.error(`⛔ Insufficient funds: trade needs $${tradeValue.toFixed(2)} but only $${freeBalance.toFixed(2)} available`);
+          updateSignalStatus(signal.id, "rejected");
+          return;
+        }
+      }
+
       if (settings.mode === "paper") {
         const entryPrice = parseFloat(signal.entryPrice?.replace(/[^0-9.]/g, "") || signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0") / parseFloat(signal.quantity || "1");
         openTrade(signal, entryPrice || 0, true);
@@ -75,7 +92,7 @@ const Index = () => {
       updateSignalStatus(signal.id, "failed", { error: err instanceof Error ? err.message : "Unknown error" });
       toast.error(`❌ Trade failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
-  }, [settings, executeOrder, updateSignalStatus, openTrade]);
+  }, [settings, executeOrder, updateSignalStatus, openTrade, activeTrades]);
 
   const handleReject = useCallback((id: string) => {
     updateSignalStatus(id, "rejected");
@@ -94,19 +111,22 @@ const Index = () => {
       updateSettings({ requireApproval: false });
     }
 
-    const runCycle = () => {
+    const runCycle = async () => {
+      // Refresh balances before each cycle to know actual available funds
+      try { await fetchBalances(); } catch (e) { console.error("Balance refresh failed:", e); }
+
       const pending = signalsRef.current.filter(s => s.status === "pending");
       if (pending.length > 0) {
         for (const signal of pending) {
           if (signal.confidence >= 60) {
-            handleApprove(signal);
+            await handleApprove(signal);
           } else {
             handleReject(signal.id);
           }
         }
       }
       if (pending.length === 0 && !signalsLoadingRef.current && coins.length > 0) {
-        generateSignals(coins, balances);
+        generateSignals(coins, balances, accountValueRef.current?.totalUsd);
       }
     };
 
@@ -194,7 +214,7 @@ const Index = () => {
             accountValue={accountValue}
             balances={balances}
             balancesLoading={balancesLoading}
-            onGenerateSignals={() => generateSignals(coins, balances)}
+            onGenerateSignals={() => generateSignals(coins, balances, accountValue?.totalUsd)}
             onUpdateSettings={updateSettings}
             onApprove={handleApprove}
             onReject={handleReject}
