@@ -189,7 +189,7 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
     });
   }, []);
 
-  const generateSignals = useCallback(async (coins: CoinData[], portfolio: BinanceBalance[]) => {
+  const generateSignals = useCallback(async (coins: CoinData[], portfolio: BinanceBalance[], totalBalanceUsd?: number) => {
     setLoading(true);
     setError(null);
     try {
