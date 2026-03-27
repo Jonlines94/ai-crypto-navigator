@@ -117,12 +117,16 @@ const TradingDashboard = ({
             onClick={onToggleBot}
             className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg transition-all ${
               botActive
-                ? "bg-gain text-gain-foreground animate-pulse shadow-lg shadow-gain/20"
+                ? settings.mode === "live"
+                  ? "bg-loss text-loss-foreground animate-pulse shadow-lg shadow-loss/30"
+                  : "bg-gain text-gain-foreground animate-pulse shadow-lg shadow-gain/20"
                 : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
             <Power className="w-3.5 h-3.5" />
-            {botActive ? "Bot Active" : "Activate Bot"}
+            {botActive
+              ? settings.mode === "live" ? "⚡ Bot Live" : "Bot Active"
+              : "Activate Bot"}
           </button>
           <button
             onClick={() => setShowHistory(!showHistory)}
