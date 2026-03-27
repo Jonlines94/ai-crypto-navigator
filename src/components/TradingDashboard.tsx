@@ -377,8 +377,8 @@ const TradingDashboard = ({
 
                     {/* SL / TP */}
                     <div className="text-right hidden md:block">
-                      <div className="text-[10px] text-muted-foreground">SL: <span className="text-loss font-mono">${trade.stopLoss.toFixed(2)}</span></div>
-                      <div className="text-[10px] text-muted-foreground">TP: <span className="text-gain font-mono">${trade.takeProfit.toFixed(2)}</span></div>
+                       <div className="text-[10px] text-muted-foreground">SL: <span className="text-loss font-mono">{fmtPrice(trade.stopLoss)}</span></div>
+                       <div className="text-[10px] text-muted-foreground">TP: <span className="text-gain font-mono">{fmtPrice(trade.takeProfit)}</span></div>
                     </div>
 
                     {/* Close Button */}
