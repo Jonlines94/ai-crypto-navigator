@@ -149,7 +149,7 @@ const Index = () => {
         }
       } else if (!signalsLoadingRef.current && coins.length > 0) {
         console.log("[Bot] No pending signals, generating new ones...");
-        await generateSignals(coins, balances, accountValueRef.current?.totalUsd);
+        await generateSignals(coins, balancesRef.current, accountValueRef.current?.totalUsd);
         // Wait a tick for state to update, then process the new signals
         await new Promise(r => setTimeout(r, 500));
         const newPending = signalsRef.current.filter(s => s.status === "pending");
