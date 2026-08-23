@@ -155,6 +155,12 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
                     {gem.potentialScore}
                   </div>
                   <div className="text-[9px] font-mono text-muted-foreground uppercase">Potential</div>
+                  {gem.verified && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-mono font-bold text-gain mt-0.5">
+                      <BadgeCheck className="w-3 h-3" />
+                      VERIFIED
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -174,6 +180,7 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
                   <span className="text-[9px] font-mono text-muted-foreground uppercase block">Price</span>
                   <span className="text-sm font-mono font-semibold text-foreground">{formatPrice(gem.price)}</span>
                 </div>
+                {gem.change1h != null && <ChangeBadge value={gem.change1h} label="1h" />}
                 <ChangeBadge value={gem.change24h} label="24h" />
                 <ChangeBadge value={gem.change7d} label="7d" />
               </div>
@@ -191,7 +198,19 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
               </div>
 
               {/* AI reason */}
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">{gem.reason}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-2">{gem.reason}</p>
+
+              {/* Verification note */}
+              {gem.verificationNote && (
+                <div className={`flex items-start gap-1.5 mb-3 p-2 rounded border text-[10px] font-mono leading-relaxed ${
+                  gem.verified
+                    ? "bg-gain/5 border-gain/20 text-gain"
+                    : "bg-warning/5 border-warning/20 text-warning"
+                }`}>
+                  <BadgeCheck className="w-3 h-3 shrink-0 mt-0.5" />
+                  <span>{gem.verificationNote}</span>
+                </div>
+              )}
 
               {/* Risk badge */}
               <div className="flex items-center justify-between">
