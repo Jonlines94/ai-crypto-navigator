@@ -107,7 +107,7 @@ const Header = () => {
 
   return (
     <>
-      <header className="border-b border-border bg-card/30 backdrop-blur-sm">
+      <header className="relative z-50 border-b border-border bg-card/30 backdrop-blur-sm">
         <div className="max-w-[1440px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Brain className="w-7 h-7 text-primary" />
@@ -131,7 +131,7 @@ const Header = () => {
             </div>
 
             {open && results.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-2xl overflow-hidden z-50">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-2xl overflow-hidden z-[100]">
                 {results.map((coin) => (
                   <button
                     key={coin.id}
@@ -151,7 +151,7 @@ const Header = () => {
               </div>
             )}
             {open && !searching && query.trim().length >= 2 && results.length === 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-2xl z-50 px-4 py-3">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-2xl z-[100] px-4 py-3">
                 <span className="text-xs text-muted-foreground">No tokens found for "{query}"</span>
               </div>
             )}
