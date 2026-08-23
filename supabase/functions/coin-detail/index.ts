@@ -122,7 +122,7 @@ serve(async (req) => {
       explorer: (c.links?.blockchain_site || []).find((h: string) => h) || null,
     };
 
-    return new Response(JSON.stringify({ detail, chart }), {
+    return new Response(JSON.stringify({ detail, chart, markets }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
