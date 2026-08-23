@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, TrendingUp, TrendingDown, ExternalLink, Brain, Globe, FileSearch } from "lucide-react";
+import { X, TrendingUp, TrendingDown, ExternalLink, Brain, Globe, FileSearch, Store } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import type { AiPrediction } from "@/hooks/useAiPredictions";
@@ -35,6 +35,16 @@ interface CoinDetail {
   description: string;
   homepage: string | null;
   explorer: string | null;
+}
+
+interface MarketListing {
+  exchange: string;
+  exchangeLogo: string | null;
+  pair: string;
+  price: number;
+  volume: number;
+  trustScore: string | null;
+  tradeUrl: string | null;
 }
 
 const fmtPrice = (p: number) => {
