@@ -8,6 +8,7 @@ import AiPredictions from "@/components/AiPredictions";
 import ExchangeFlows from "@/components/ExchangeFlows";
 import TransfersFeed from "@/components/TransfersFeed";
 import TradingDashboard from "@/components/TradingDashboard";
+import Footer from "@/components/Footer";
 import { useCryptoData } from "@/hooks/useCryptoData";
 import { useAiPredictions } from "@/hooks/useAiPredictions";
 import { useBinance } from "@/hooks/useBinance";
@@ -271,6 +272,7 @@ const Index = () => {
           />
         )}
       </main>
+      <Footer />
     </div>
   );
 };
