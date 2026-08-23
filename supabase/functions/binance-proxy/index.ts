@@ -35,28 +35,42 @@ async function binanceReq(method: string, endpoint: string, params: Record<strin
   if (!apiKey || !apiSecret) throw new Error("Binance API keys not configured");
   const headers: Record<string, string> = { "X-MBX-APIKEY": apiKey };
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const p = { ...params };
-      if (signed) { p.timestamp = Date.now().toString(); p.recvWindow = "10000"; }
-      const qs = new URLSearchParams(p).toString();
-      let url: string;
-      if (signed) { const sig = await hmacSign(qs, apiSecret); url = `${BINANCE_BASE}${endpoint}?${qs}&signature=${sig}`; }
-      else { url = `${BINANCE_BASE}${endpoint}${qs ? `?${qs}` : ""}`; }
-      console.log(`Binance ${method} ${endpoint} (attempt ${attempt + 1})`);
-      const resp = await fetch(url, { method, headers });
-      const data = await resp.json();
-      if (!resp.ok) { console.error(`Binance err ${resp.status}:`, JSON.stringify(data)); throw new Error(`Binance API [${resp.status}]: ${JSON.stringify(data)}`); }
-      return data;
-    } catch (e) {
-      if (attempt < retries && e instanceof Error && (e.message.includes("Connection reset") || e.message.includes("os error"))) {
-        console.warn(`Retrying after connection error (attempt ${attempt + 1}):`, e.message);
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        continue;
+  const hosts = signed ? SIGNED_HOSTS : [MARKET_DATA_BASE, ...SIGNED_HOSTS];
+  let lastErr: Error | null = null;
+
+  for (const base of hosts) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const p = { ...params };
+        if (signed) { p.timestamp = Date.now().toString(); p.recvWindow = "10000"; }
+        const qs = new URLSearchParams(p).toString();
+        let url: string;
+        if (signed) { const sig = await hmacSign(qs, apiSecret); url = `${base}${endpoint}?${qs}&signature=${sig}`; }
+        else { url = `${base}${endpoint}${qs ? `?${qs}` : ""}`; }
+        console.log(`Binance ${method} ${endpoint} via ${base} (attempt ${attempt + 1})`);
+        const resp = await fetch(url, { method, headers });
+        const data = await resp.json();
+        if (!resp.ok) {
+          console.error(`Binance err ${resp.status}:`, JSON.stringify(data));
+          const err = new Error(`Binance API [${resp.status}]: ${JSON.stringify(data)}`);
+          // 451 = geo-blocked on this host — try the next host immediately
+          if (resp.status === 451) { lastErr = err; break; }
+          throw err;
+        }
+        return data;
+      } catch (e) {
+        lastErr = e instanceof Error ? e : new Error(String(e));
+        if (lastErr.message.includes("[451]")) break; // try next host
+        if (attempt < retries && (lastErr.message.includes("Connection reset") || lastErr.message.includes("os error"))) {
+          console.warn(`Retrying after connection error (attempt ${attempt + 1}):`, lastErr.message);
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        if (attempt >= retries) break; // exhausted retries on this host, try next
       }
-      throw e;
     }
   }
+  throw lastErr || new Error("All Binance hosts unreachable");
 }
 
 serve(async (req) => {
