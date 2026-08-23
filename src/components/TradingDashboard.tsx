@@ -131,8 +131,8 @@ const TradingDashboard = ({
                 : `Max ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}%`}
             </p>
             {/* Equity Bar */}
-            <div className="mt-2 flex items-center gap-3">
-              <div className="flex items-center gap-4 text-[11px] font-mono">
+            <div className="mt-2 flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[11px] font-mono">
                 <span className="text-muted-foreground">Equity: <span className="text-foreground font-semibold">${totalBalance.toFixed(2)}</span></span>
                 <span className="text-muted-foreground">Allocated: <span className="text-primary font-semibold">${allocatedValue.toFixed(2)}</span></span>
                 <span className="text-muted-foreground">Available: <span className={`font-semibold ${remainingEquity > 0 ? "text-gain" : "text-loss"}`}>${remainingEquity.toFixed(2)}</span></span>
@@ -150,7 +150,7 @@ const TradingDashboard = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={onToggleBot}
             className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg transition-all ${
