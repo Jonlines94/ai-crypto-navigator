@@ -52,6 +52,59 @@ async function fetchJson(url: string): Promise<any | null> {
   }
 }
 
+// ---------- Binance 1h technical snapshot (best-effort, only if a USDT pair exists) ----------
+async function binanceTech(symbol: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://data-api.binance.vision/api/v3/klines?symbol=${symbol.toUpperCase()}USDT&interval=1h&limit=60`
+    );
+    if (!res.ok) return null;
+    const k = await res.json();
+    if (!Array.isArray(k) || k.length < 30) return null;
+
+    const closes = k.map((x: any[]) => parseFloat(x[4]));
+    const vols = k.map((x: any[]) => parseFloat(x[5]));
+
+    // RSI(14)
+    let gains = 0, losses = 0;
+    for (let i = closes.length - 14; i < closes.length; i++) {
+      const d = closes[i] - closes[i - 1];
+      if (d >= 0) gains += d; else losses -= d;
+    }
+    const rsi = losses === 0 ? 100 : Math.round((100 - 100 / (1 + gains / losses)) * 10) / 10;
+
+    // EMA9/21 trend
+    const emaOf = (vals: number[], p: number) => {
+      const kk = 2 / (p + 1);
+      let e = vals[0];
+      for (let i = 1; i < vals.length; i++) e = vals[i] * kk + e * (1 - kk);
+      return e;
+    };
+    const trendUp = emaOf(closes.slice(-30), 9) >= emaOf(closes.slice(-30), 21);
+
+    // MACD histogram (12/26/9)
+    const k12 = 2 / 13, k26 = 2 / 27, k9 = 2 / 10;
+    let e12 = closes[0], e26 = closes[0], sig = 0, hist = 0, prevHist = 0;
+    for (let i = 1; i < closes.length; i++) {
+      e12 = closes[i] * k12 + e12 * (1 - k12);
+      e26 = closes[i] * k26 + e26 * (1 - k26);
+      const m = e12 - e26;
+      sig = i === 1 ? m : m * k9 + sig * (1 - k9);
+      prevHist = hist;
+      hist = m - sig;
+    }
+
+    // Volume ratio: last 6h vs prior avg
+    const recent = vols.slice(-6).reduce((a, b) => a + b, 0) / 6;
+    const prior = vols.slice(0, -6).reduce((a, b) => a + b, 0) / Math.max(vols.length - 6, 1);
+    const volRatio = prior > 0 ? (recent / prior).toFixed(2) : "1.00";
+
+    return `1h RSI ${rsi}, MACD ${hist > 0 ? "POS" : "NEG"}(${hist > prevHist ? "rising" : "fading"}), 1h trend ${trendUp ? "UP" : "DOWN"}, vol ${volRatio}x avg`;
+  } catch {
+    return null;
+  }
+}
+
 // ---------- Deterministic potential scoring ----------
 function scoreCoin(c: RawCoin, trendingIds: Set<string>): { score: number; reason: string } {
   const chg24 = c.price_change_percentage_24h_in_currency ?? 0;
@@ -204,8 +257,22 @@ serve(async (req) => {
 
     const dataAsOf = new Date().toISOString();
 
+    // Stage 3b: live Binance 1h technicals for shortlisted symbols (best-effort)
+    const uniqueSymbols = [...new Set(working.map(({ c }) => c.symbol.toUpperCase()))];
+    const techResults = await Promise.all(uniqueSymbols.map((s) => binanceTech(s)));
+    const techBySymbol = new Map<string, string>();
+    uniqueSymbols.forEach((s, i) => {
+      const t = techResults[i];
+      if (t) techBySymbol.set(s, t);
+    });
+
+    const withTech = (c: RawCoin) => {
+      const t = techBySymbol.get(c.symbol.toUpperCase());
+      return t ? `, Binance 1h: ${t}` : "";
+    };
+
     const candidateSummary = working.map(({ c, score }, i) =>
-      `${i + 1}. ${coinLine(c, `, trending ${trendingIds.has(c.id) ? "YES" : "no"}, heuristic score ${score}`)}`
+      `${i + 1}. ${coinLine(c, `, trending ${trendingIds.has(c.id) ? "YES" : "no"}, heuristic score ${score}${withTech(c)}`)}`
     ).join("\n");
 
     const pickPrompt = `You are an elite crypto analyst specializing in EARLY-STAGE and UP-AND-COMING coins — small and mid caps with real breakout potential BEFORE the crowd arrives.
