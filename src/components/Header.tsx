@@ -66,16 +66,16 @@ const Header = ({ predictions = [] }: HeaderProps) => {
   return (
     <>
       <header className="relative z-50 border-b border-border bg-card/30 backdrop-blur-sm">
-        <div className="max-w-[1440px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Brain className="w-7 h-7 text-primary" />
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
+        <div className="max-w-[1440px] mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Brain className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
               CRYPTO<span className="text-primary">NEXUS</span>
               <span className="text-xs font-mono text-muted-foreground ml-2 align-middle">AI</span>
             </h1>
           </div>
 
-          <div className="flex-1 max-w-xl relative" ref={boxRef}>
+          <div className="w-full order-3 sm:order-none sm:w-auto sm:flex-1 max-w-xl relative" ref={boxRef}>
             <div className="relative">
               <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground ${searching ? "animate-pulse" : ""}`} />
               <input

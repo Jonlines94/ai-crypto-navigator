@@ -103,7 +103,7 @@ const TradingDashboard = ({
   return (
     <section className="space-y-6">
       {/* Mode Banner */}
-      <div className={`rounded-xl border p-4 flex items-center justify-between ${
+      <div className={`rounded-xl border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${
         settings.mode === "live"
           ? "bg-loss/5 border-loss/30"
           : "bg-primary/5 border-primary/30"
@@ -131,8 +131,8 @@ const TradingDashboard = ({
                 : `Max ${settings.maxTradePercent}%/trade ($${(settings.accountBalance * settings.maxTradePercent / 100).toFixed(0)}) · SL ${settings.stopLossPct}% · TP ${settings.takeProfitPct}%`}
             </p>
             {/* Equity Bar */}
-            <div className="mt-2 flex items-center gap-3">
-              <div className="flex items-center gap-4 text-[11px] font-mono">
+            <div className="mt-2 flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[11px] font-mono">
                 <span className="text-muted-foreground">Equity: <span className="text-foreground font-semibold">${totalBalance.toFixed(2)}</span></span>
                 <span className="text-muted-foreground">Allocated: <span className="text-primary font-semibold">${allocatedValue.toFixed(2)}</span></span>
                 <span className="text-muted-foreground">Available: <span className={`font-semibold ${remainingEquity > 0 ? "text-gain" : "text-loss"}`}>${remainingEquity.toFixed(2)}</span></span>
@@ -150,7 +150,7 @@ const TradingDashboard = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={onToggleBot}
             className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg transition-all ${
@@ -312,8 +312,8 @@ const TradingDashboard = ({
       {/* Active Trades - Live P&L */}
       {activeTrades.length > 0 && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="p-4 border-b border-border flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
               <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
                 Open Positions ({activeTrades.length})
@@ -358,15 +358,15 @@ const TradingDashboard = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 sm:gap-6 flex-wrap justify-end">
                     {/* Current Price */}
-                    <div className="text-right">
+                    <div className="text-right hidden sm:block">
                       <div className="text-xs text-muted-foreground">Current</div>
                       <div className="text-sm font-mono font-semibold text-foreground">{fmtPrice(trade.currentPrice)}</div>
                     </div>
 
                     {/* P&L */}
-                    <div className="text-right min-w-[100px]">
+                    <div className="text-right min-w-[70px] sm:min-w-[100px]">
                       <div className={`text-sm font-mono font-bold ${trade.pnl >= 0 ? "text-gain" : "text-loss"}`}>
                         {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                       </div>
@@ -481,7 +481,7 @@ const TradingDashboard = ({
       </div>
 
       {/* Market Outlook + Generate */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           {marketOutlook && (
             <p className="text-sm text-muted-foreground italic">📊 {marketOutlook}</p>
@@ -496,7 +496,7 @@ const TradingDashboard = ({
         <button
           onClick={onGenerateSignals}
           disabled={loading || botActive}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
           {loading ? "Analyzing Markets..." : "Generate Trade Signals"}

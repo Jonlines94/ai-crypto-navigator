@@ -189,17 +189,17 @@ const Index = () => {
     return () => { if (botIntervalRef.current) clearInterval(botIntervalRef.current); };
   }, [botActive]);
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Header predictions={predictions} />
       <TickerBar coins={coins} loading={coinsLoading} />
 
       {/* Tab Navigation */}
       <div className="max-w-[1440px] mx-auto px-4 pt-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1 overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveTab("intel")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === "intel"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -210,7 +210,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setActiveTab("gems")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === "gems"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -221,7 +221,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setActiveTab("trading")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === "trading"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -238,9 +238,9 @@ const Index = () => {
           </div>
 
           {lastUpdated && (
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
               <div className="w-1.5 h-1.5 rounded-full bg-gain animate-pulse" />
-              <span className="text-[10px] font-mono text-muted-foreground">
+              <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">
                 Live · {lastUpdated.toLocaleTimeString()}
               </span>
             </div>
