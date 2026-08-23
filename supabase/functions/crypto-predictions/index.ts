@@ -45,43 +45,109 @@ const rsi = (closes: number[], period = 14): number => {
   return 100 - 100 / (1 + rs);
 };
 
+// Full MACD histogram series (12/26/9) so we can tell if momentum is rising or fading
+const macdHistogramSeries = (closes: number[]): number[] => {
+  if (closes.length < 2) return [0];
+  const k12 = 2 / 13, k26 = 2 / 27, k9 = 2 / 10;
+  let e12 = closes[0], e26 = closes[0], signal = 0;
+  const out: number[] = [0];
+  for (let i = 1; i < closes.length; i++) {
+    e12 = closes[i] * k12 + e12 * (1 - k12);
+    e26 = closes[i] * k26 + e26 * (1 - k26);
+    const macd = e12 - e26;
+    signal = i === 1 ? macd : macd * k9 + signal * (1 - k9);
+    out.push(macd - signal);
+  }
+  return out;
+};
+
+const atr = (highs: number[], lows: number[], closes: number[], period = 14): number => {
+  if (closes.length < period + 1) return 0;
+  let sum = 0;
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const tr = Math.max(
+      highs[i] - lows[i],
+      Math.abs(highs[i] - closes[i - 1]),
+      Math.abs(lows[i] - closes[i - 1])
+    );
+    sum += tr;
+  }
+  return sum / period;
+};
+
+const bollingerPctB = (closes: number[], period = 20): number => {
+  if (closes.length < period) return 0.5;
+  const slice = closes.slice(-period);
+  const mean = slice.reduce((a, b) => a + b, 0) / period;
+  const variance = slice.reduce((a, b) => a + (b - mean) * (b - mean), 0) / period;
+  const sd = Math.sqrt(variance);
+  if (sd === 0) return 0.5;
+  const upper = mean + 2 * sd;
+  const lower = mean - 2 * sd;
+  const last = closes[closes.length - 1];
+  return (last - lower) / (upper - lower);
+};
+
 interface Indicators {
   rsi1h: number;
   ema9: number;
   ema21: number;
   trend: "bullish" | "bearish";
+  trend4h: "bullish" | "bearish";
   change1h: number;
   change4h: number;
-  volumeRatio: number; // recent 6h avg volume vs prior 42h avg
+  volumeRatio: number; // recent 6h avg volume vs prior avg
+  macdHist: number; // + = bullish momentum, - = bearish
+  macdRising: boolean; // histogram now vs 3 bars ago
+  bbPct: number; // 0 = lower band, 1 = upper band
+  atrPct: number; // 1h ATR as % of price (volatility)
 }
 
 const fetchIndicators = async (symbol: string): Promise<Indicators | null> => {
   try {
     const res = await fetch(
-      `${BINANCE_DATA}/api/v3/klines?symbol=${String(symbol).toUpperCase()}USDT&interval=1h&limit=50`
+      `${BINANCE_DATA}/api/v3/klines?symbol=${String(symbol).toUpperCase()}USDT&interval=1h&limit=120`
     );
     if (!res.ok) return null;
     const klines = await res.json();
     if (!Array.isArray(klines) || klines.length < 30) return null;
 
     const closes = klines.map((k: any[]) => numberValue(k[4]));
+    const highs = klines.map((k: any[]) => numberValue(k[2]));
+    const lows = klines.map((k: any[]) => numberValue(k[3]));
     const volumes = klines.map((k: any[]) => numberValue(k[5]));
     const last = closes[closes.length - 1];
 
     const ema9 = ema(closes.slice(-30), 9);
     const ema21 = ema(closes.slice(-30), 21);
 
+    // Approximate 4h trend by resampling 1h closes at candle close boundaries
+    const closes4h = closes.filter((_: number, i: number) => i % 4 === 3);
+    const trend4h = closes4h.length >= 22
+      ? (ema(closes4h, 9) >= ema(closes4h, 21) ? "bullish" : "bearish")
+      : (ema(closes, 9) >= ema(closes, 21) ? "bullish" : "bearish");
+
     const recentVol = volumes.slice(-6).reduce((a, b) => a + b, 0) / 6;
     const priorVol = volumes.slice(0, -6).reduce((a, b) => a + b, 0) / Math.max(volumes.length - 6, 1);
+
+    const histSeries = macdHistogramSeries(closes);
+    const macdHist = histSeries[histSeries.length - 1];
+    const macdPrev = histSeries[Math.max(0, histSeries.length - 4)];
+    const atrVal = atr(highs, lows, closes);
 
     return {
       rsi1h: Math.round(rsi(closes) * 10) / 10,
       ema9,
       ema21,
       trend: ema9 >= ema21 ? "bullish" : "bearish",
+      trend4h,
       change1h: closes.length > 1 ? ((last - closes[closes.length - 2]) / closes[closes.length - 2]) * 100 : 0,
       change4h: closes.length > 4 ? ((last - closes[closes.length - 5]) / closes[closes.length - 5]) * 100 : 0,
       volumeRatio: priorVol > 0 ? recentVol / priorVol : 1,
+      macdHist,
+      macdRising: macdHist > macdPrev,
+      bbPct: Math.round(bollingerPctB(closes) * 100) / 100,
+      atrPct: last > 0 ? (atrVal / last) * 100 : 0,
     };
   } catch {
     return null;
@@ -112,24 +178,26 @@ const buildFallbackPredictions = (coins: any[], indicators: Record<string, Indic
     let reasoning = "Indicators are mixed, so the highest-probability move is to wait for a confirmed break of the range.";
 
     const bullTrend = ind ? ind.trend === "bullish" : change24h > 0;
-    const oversold = ind ? ind.rsi1h <= 35 : positionInRange <= 0.2;
-    const overbought = ind ? ind.rsi1h >= 68 : positionInRange >= 0.85;
+    const bull4h = ind ? ind.trend4h === "bullish" : bullTrend;
+    const macdOk = ind ? ind.macdHist > 0 : true;
+    const oversold = ind ? (ind.rsi1h <= 35 || ind.bbPct <= 0.15) : positionInRange <= 0.2;
+    const overbought = ind ? (ind.rsi1h >= 68 || ind.bbPct >= 0.9) : positionInRange >= 0.85;
     const volConfirm = ind ? ind.volumeRatio >= 1.2 : volumeStrength > 0.4;
 
-    if (bullTrend && oversold) {
+    if (bullTrend && bull4h && oversold) {
       action = "BUY";
       target = price * 1.05;
       stopLoss = price * 0.975;
       confidence = 78;
       verdict = "Buy the dip in uptrend";
-      reasoning = `Uptrend intact (EMA9 above EMA21) with RSI at ${ind?.rsi1h ?? "oversold levels"} — pullback entry with a target ${formatUsd(target)} and invalidation below ${formatUsd(stopLoss)}.`;
-    } else if (bullTrend && change24h >= 3 && volConfirm) {
+      reasoning = `Uptrend intact on both 1h and 4h with RSI at ${ind?.rsi1h ?? "oversold levels"} — pullback entry with a target ${formatUsd(target)} and invalidation below ${formatUsd(stopLoss)}.`;
+    } else if (bullTrend && macdOk && change24h >= 3 && volConfirm) {
       action = "BUY";
       target = price * 1.06;
       stopLoss = price * 0.97;
       confidence = 74;
       verdict = "Momentum continuation long";
-      reasoning = `Price is up ${change24h.toFixed(1)}% on rising volume with the 1h trend bullish — continuation toward ${formatUsd(target)} is the higher-probability path.`;
+      reasoning = `Price is up ${change24h.toFixed(1)}% on rising volume with bullish 1h trend and positive MACD — continuation toward ${formatUsd(target)} is the higher-probability path.`;
     } else if (!bullTrend && overbought) {
       action = "SELL";
       target = price * 0.95;
@@ -137,13 +205,13 @@ const buildFallbackPredictions = (coins: any[], indicators: Record<string, Indic
       confidence = 76;
       verdict = "Fade the rally";
       reasoning = `Bearish trend with RSI stretched at ${ind?.rsi1h ?? "overbought levels"} — rallies are for selling, targeting ${formatUsd(target)} with invalidation above ${formatUsd(stopLoss)}.`;
-    } else if (!bullTrend && change24h <= -3 && volConfirm) {
+    } else if (!bullTrend && !macdOk && change24h <= -3 && volConfirm) {
       action = "SELL";
       target = price * 0.94;
       stopLoss = price * 1.02;
       confidence = 72;
       verdict = "Breakdown — exit longs";
-      reasoning = `Down ${Math.abs(change24h).toFixed(1)}% on elevated volume in a bearish 1h trend — further downside toward ${formatUsd(target)} is likely before any base forms.`;
+      reasoning = `Down ${Math.abs(change24h).toFixed(1)}% on elevated volume in a bearish 1h trend with negative MACD — further downside toward ${formatUsd(target)} is likely before any base forms.`;
     } else {
       target = price * (bullTrend ? 1.02 : 0.98);
       stopLoss = price * (bullTrend ? 0.985 : 1.015);
@@ -189,7 +257,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Pull real 1h technicals for every coin in parallel
+    // Pull real 1h technicals for every coin in parallel (120 candles → 1h + derived 4h)
     const indicatorResults = await Promise.all(
       coins.map((c: any) => fetchIndicators(c.symbol))
     );
@@ -198,24 +266,35 @@ serve(async (req) => {
       indicators[String(c.symbol).toUpperCase()] = indicatorResults[i];
     });
 
+    // BTC sets the market regime — alts trade with beta to it
+    const btc = indicators["BTC"];
+    const regime = btc
+      ? `MARKET REGIME (BTC): 1h trend ${btc.trend.toUpperCase()}, 4h trend ${btc.trend4h.toUpperCase()}, RSI ${btc.rsi1h}, MACD hist ${btc.macdHist > 0 ? "POSITIVE" : "NEGATIVE"} (${btc.macdRising ? "rising" : "fading"}), 24h change ${numberValue(coins.find((c: any) => String(c.symbol).toUpperCase() === "BTC")?.change24h).toFixed(2)}%.`
+      : "";
+
     const marketSummary = coins
       .map((c: any) => {
         const ind = indicators[String(c.symbol).toUpperCase()];
         const base = `${c.name} (${String(c.symbol).toUpperCase()}): Price $${c.price}, 24h change ${c.change24h}%, Market Cap $${c.marketCap}, 24h Volume $${c.volume}, 24h High $${c.high24h}, 24h Low $${c.low24h}`;
         if (!ind) return base;
-        return `${base} | 1h RSI(14): ${ind.rsi1h}, 1h trend: ${ind.trend.toUpperCase()} (EMA9 ${ind.ema9 >= ind.ema21 ? ">" : "<"} EMA21), 1h change ${ind.change1h.toFixed(2)}%, 4h change ${ind.change4h.toFixed(2)}%, volume ${ind.volumeRatio >= 1.2 ? "RISING" : ind.volumeRatio <= 0.8 ? "FALLING" : "FLAT"} (${ind.volumeRatio.toFixed(2)}x avg)`;
+        return `${base} | 1h RSI(14): ${ind.rsi1h}, 1h trend: ${ind.trend.toUpperCase()}, 4h trend: ${ind.trend4h.toUpperCase()}, MACD hist: ${ind.macdHist > 0 ? "POSITIVE" : "NEGATIVE"} (${ind.macdRising ? "rising" : "fading"}), Bollinger %B: ${ind.bbPct}, 1h ATR: ${ind.atrPct.toFixed(2)}%, 1h change ${ind.change1h.toFixed(2)}%, 4h change ${ind.change4h.toFixed(2)}%, volume ${ind.volumeRatio >= 1.2 ? "RISING" : ind.volumeRatio <= 0.8 ? "FALLING" : "FLAT"} (${ind.volumeRatio.toFixed(2)}x avg)`;
       })
       .join("\n");
 
     const systemPrompt = `You are an elite crypto trading strategist. You give DECISIVE, committed calls — never wishy-washy analysis. You must respond ONLY by calling the provided tool.
 
+You receive rich technicals per asset: 1h RSI(14), 1h trend (EMA9 vs EMA21), 4h trend, MACD histogram (sign + rising/fading), Bollinger %B (0=lower band, 1=upper band), 1h ATR% (volatility), and volume ratio vs average.
+
 Hard rules for every asset:
 1. COMMIT to exactly one action: BUY, SELL, or HOLD. No hedging language ("might", "could", "possibly", "may") anywhere in your output.
-2. Only issue BUY or SELL when confidence is 65+ AND at least two of these agree: 1h trend (EMA9 vs EMA21), RSI(14), 24h momentum, volume trend. If they conflict, output HOLD and state exactly what would trigger a trade.
-3. Every call needs concrete levels: entry (current price area), target (realistic 2-8% move), stopLoss (invalidation), timeframe (e.g. "24-72h swing", "intraday", "1-2 weeks").
-4. reasoning: exactly 1-2 sentences citing the actual numbers (RSI value, EMA alignment, 24h change, volume ratio) and stating what WILL happen — not what might.
-5. verdict: a punchy 3-6 word call, e.g. "Breakout continuation — buy strength", "Distribution — exit rallies now", "Dead range — wait for break".
-6. Confidence 50-95. Reserve 80+ for setups where trend, momentum and volume all align.`;
+2. Only issue BUY or SELL when confidence is 65+ AND at least THREE of these agree: 1h trend, 4h trend, MACD histogram direction, RSI(14), volume trend. If they conflict, output HOLD and state exactly what would trigger a trade.
+3. MULTI-TIMEFRAME ALIGNMENT: the highest-conviction longs have BOTH 1h and 4h trends bullish with a positive, rising MACD. A BUY against a bearish 4h trend needs RSI < 30 AND a rising MACD histogram (oversold reversal) — otherwise HOLD.
+4. MARKET REGIME: BTC leads the market. If BTC's 1h/4h trend is bearish with negative MACD, downgrade altcoin BUYs one confidence tier unless the alt is showing clear relative strength (green 24h while BTC is red, rising volume).
+5. VOLATILITY-AWARE LEVELS: size targets to the ATR. For a 24-72h swing, a realistic target is roughly 10-30x the 1h ATR% move away; never set a target beyond ~6% for a low-ATR major or inside ~1% for a high-ATR alt. Stop loss sits at least 3x the 1h ATR% from entry so normal noise doesn't trigger it.
+6. BOLLINGER CONTEXT: %B above 0.9 with fading MACD = do not chase (HOLD or SELL). %B below 0.1 in an uptrend = pullback entry zone.
+7. reasoning: exactly 1-2 sentences citing the actual numbers (RSI value, MACD direction, trend alignment, volume ratio) and stating what WILL happen — not what might.
+8. verdict: a punchy 3-6 word call, e.g. "Breakout continuation — buy strength", "Distribution — exit rallies now", "Dead range — wait for break".
+9. Confidence 50-95. Reserve 80+ for setups where both timeframes, MACD, momentum and volume all align.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -229,7 +308,7 @@ Hard rules for every asset:
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Here is live market data with 1h technical indicators for each asset. Give your committed trading call for every one:\n\n${marketSummary}`,
+            content: `${regime ? regime + "\n\n" : ""}Here is live market data with full technical indicators for each asset. Give your committed trading call for every one:\n\n${marketSummary}`,
           },
         ],
         tools: [

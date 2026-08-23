@@ -57,6 +57,19 @@
 @layer base {
   * {
     @apply border-border;
+    /* Hide scrollbars everywhere while keeping scroll functional */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
+  *::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Edge */
+    width: 0;
+    height: 0;
+  }
+  html,
+  body {
+    scrollbar-width: none;
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground font-sans;

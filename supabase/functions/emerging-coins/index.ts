@@ -52,6 +52,59 @@ async function fetchJson(url: string): Promise<any | null> {
   }
 }
 
+// ---------- Binance 1h technical snapshot (best-effort, only if a USDT pair exists) ----------
+async function binanceTech(symbol: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://data-api.binance.vision/api/v3/klines?symbol=${symbol.toUpperCase()}USDT&interval=1h&limit=60`
+    );
+    if (!res.ok) return null;
+    const k = await res.json();
+    if (!Array.isArray(k) || k.length < 30) return null;
+
+    const closes = k.map((x: any[]) => parseFloat(x[4]));
+    const vols = k.map((x: any[]) => parseFloat(x[5]));
+
+    // RSI(14)
+    let gains = 0, losses = 0;
+    for (let i = closes.length - 14; i < closes.length; i++) {
+      const d = closes[i] - closes[i - 1];
+      if (d >= 0) gains += d; else losses -= d;
+    }
+    const rsi = losses === 0 ? 100 : Math.round((100 - 100 / (1 + gains / losses)) * 10) / 10;
+
+    // EMA9/21 trend
+    const emaOf = (vals: number[], p: number) => {
+      const kk = 2 / (p + 1);
+      let e = vals[0];
+      for (let i = 1; i < vals.length; i++) e = vals[i] * kk + e * (1 - kk);
+      return e;
+    };
+    const trendUp = emaOf(closes.slice(-30), 9) >= emaOf(closes.slice(-30), 21);
+
+    // MACD histogram (12/26/9)
+    const k12 = 2 / 13, k26 = 2 / 27, k9 = 2 / 10;
+    let e12 = closes[0], e26 = closes[0], sig = 0, hist = 0, prevHist = 0;
+    for (let i = 1; i < closes.length; i++) {
+      e12 = closes[i] * k12 + e12 * (1 - k12);
+      e26 = closes[i] * k26 + e26 * (1 - k26);
+      const m = e12 - e26;
+      sig = i === 1 ? m : m * k9 + sig * (1 - k9);
+      prevHist = hist;
+      hist = m - sig;
+    }
+
+    // Volume ratio: last 6h vs prior avg
+    const recent = vols.slice(-6).reduce((a, b) => a + b, 0) / 6;
+    const prior = vols.slice(0, -6).reduce((a, b) => a + b, 0) / Math.max(vols.length - 6, 1);
+    const volRatio = prior > 0 ? (recent / prior).toFixed(2) : "1.00";
+
+    return `1h RSI ${rsi}, MACD ${hist > 0 ? "POS" : "NEG"}(${hist > prevHist ? "rising" : "fading"}), 1h trend ${trendUp ? "UP" : "DOWN"}, vol ${volRatio}x avg`;
+  } catch {
+    return null;
+  }
+}
+
 // ---------- Deterministic potential scoring ----------
 function scoreCoin(c: RawCoin, trendingIds: Set<string>): { score: number; reason: string } {
   const chg24 = c.price_change_percentage_24h_in_currency ?? 0;
@@ -204,20 +257,35 @@ serve(async (req) => {
 
     const dataAsOf = new Date().toISOString();
 
+    // Stage 3b: live Binance 1h technicals for shortlisted symbols (best-effort)
+    const uniqueSymbols = [...new Set(working.map(({ c }) => c.symbol.toUpperCase()))];
+    const techResults = await Promise.all(uniqueSymbols.map((s) => binanceTech(s)));
+    const techBySymbol = new Map<string, string>();
+    uniqueSymbols.forEach((s, i) => {
+      const t = techResults[i];
+      if (t) techBySymbol.set(s, t);
+    });
+
+    const withTech = (c: RawCoin) => {
+      const t = techBySymbol.get(c.symbol.toUpperCase());
+      return t ? `, Binance 1h: ${t}` : "";
+    };
+
     const candidateSummary = working.map(({ c, score }, i) =>
-      `${i + 1}. ${coinLine(c, `, trending ${trendingIds.has(c.id) ? "YES" : "no"}, heuristic score ${score}`)}`
+      `${i + 1}. ${coinLine(c, `, trending ${trendingIds.has(c.id) ? "YES" : "no"}, heuristic score ${score}${withTech(c)}`)}`
     ).join("\n");
 
     const pickPrompt = `You are an elite crypto analyst specializing in EARLY-STAGE and UP-AND-COMING coins — small and mid caps with real breakout potential BEFORE the crowd arrives.
 
-You are given pre-screened candidates (ranks ~100-400, market cap $10M-$2B, >$1M daily volume) with FRESH data refetched seconds ago: price, 1h/24h/7d momentum, volume/turnover, and trending status.
+You are given pre-screened candidates (ranks ~100-400, market cap $10M-$2B, >$1M daily volume) with FRESH data refetched seconds ago: price, 1h/24h/7d momentum, volume/turnover, trending status, and — where a Binance USDT pair exists — live 1h technicals (RSI, MACD histogram direction and slope, EMA trend, volume ratio vs average).
 
 SELECTION FRAMEWORK:
-1. VOLUME/TURNOVER: Rising volume vs market cap = smart money accumulating. High turnover (>15%) on a small cap is a strong early signal.
+1. VOLUME/TURNOVER: Rising volume vs market cap = smart money accumulating. High turnover (>15%) on a small cap is a strong early signal. Binance volume ratio >= 1.3x confirms the interest is happening NOW.
 2. MOMENTUM QUALITY: Prefer coins up 1-10% over 24h with a positive 7d trend (early breakout) OVER coins already up 30%+ (you're late). A small pullback in a 7d uptrend can be a good entry. Use the 1h change to confirm the move is still alive RIGHT NOW.
-3. TRENDING SIGNALS: CoinGecko trending status = retail attention arriving — bullish for small caps if momentum is fresh.
-4. AVOID: overextended pumps (24h >20% AND 7d >50%), dead volume, and anything that looks like pure hype with no liquidity.
-5. RISK HONESTY: smaller market cap = higher risk. Score potential and assign risk truthfully.
+3. TECHNICAL CONFIRMATION: When Binance 1h data is present, it must support the thesis — the strongest picks have 1h trend UP with a POSITIVE, rising MACD. Avoid picks where MACD is negative and fading with trend DOWN unless this is a confirmed oversold bounce (RSI < 35 with MACD rising).
+4. TRENDING SIGNALS: CoinGecko trending status = retail attention arriving — bullish for small caps if momentum is fresh.
+5. AVOID: overextended pumps (24h >20% AND 7d >50%), dead volume, and anything that looks like pure hype with no liquidity.
+6. RISK HONESTY: smaller market cap = higher risk. Score potential and assign risk truthfully.
 
 Pick the 6-10 BEST opportunities. For each: a potential score (50-98, where 90+ = exceptional setup), a specific 1-2 sentence reason citing the actual fresh numbers, and a risk rating (LOW >$500M mcap, MEDIUM $100M-$500M, HIGH <$100M).
 
@@ -311,8 +379,8 @@ Respond ONLY by calling the provided tool.`;
     const verifyPrompt = `You are a strict verification AI. Another analyst made draft picks of up-and-coming crypto coins. Your job is to VERIFY each pick against the FRESH market data (refetched seconds ago) — catch stale theses, contradicted momentum, or exaggerated claims.
 
 For each pick:
-- Check the reason against the ACTUAL fresh numbers (price, 1h/24h/7d change, turnover, volume). If the numbers contradict the thesis (e.g. "accumulation" but 1h is dumping, or "fresh momentum" but 24h is +25%), mark verified=false and explain.
-- Adjust the score up or down (max ±10) if the fresh data warrants it.
+- Check the reason against the ACTUAL fresh numbers (price, 1h/24h/7d change, turnover, volume) AND the live Binance 1h technicals when present (RSI, MACD, trend, volume ratio). If the numbers contradict the thesis (e.g. "accumulation" but 1h is dumping with negative fading MACD, or "fresh momentum" but 24h is +25%), mark verified=false and explain.
+- Adjust the score up or down (max ±10) if the fresh data warrants it. Positive rising MACD in an uptrend supports a bump up; negative MACD against the thesis supports a cut.
 - If the thesis holds against the fresh data, mark verified=true with a short confirmation note citing the key number.
 
 Respond ONLY by calling the provided tool.`;
@@ -322,7 +390,7 @@ Respond ONLY by calling the provided tool.`;
         `Verify these draft picks against the fresh data (as of ${dataAsOf}):\n\n` +
         gems.map((g) => {
           const c = bySymbol.get(g.symbol)!;
-          return `PICK: ${coinLine(c)}\n  claim (score ${g.potentialScore}): ${g.reason}`;
+          return `PICK: ${coinLine(c, withTech(c))}\n  claim (score ${g.potentialScore}): ${g.reason}`;
         }).join("\n\n"),
         {
           type: "function",
