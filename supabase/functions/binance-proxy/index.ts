@@ -105,7 +105,7 @@ serve(async (req) => {
       case "price": result=await binanceReq("GET","/api/v3/ticker/price",params||{}); break;
       case "large_trades": {
         const pairs = params?.symbols ? String(params.symbols).split(",") : ["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT","DOGEUSDT","ADAUSDT","LINKUSDT","TRXUSDT","AVAXUSDT","LTCUSDT","DOTUSDT","NEARUSDT","SUIUSDT","PEPEUSDT"];
-        const minUsd = parseFloat(params?.minUsd || "500000");
+        const minUsd = parseFloat(params?.minUsd || "100000");
         const settled = await Promise.allSettled(
           pairs.map((sym) => binanceReq("GET", "/api/v3/aggTrades", { symbol: sym, limit: "1000" }))
         );

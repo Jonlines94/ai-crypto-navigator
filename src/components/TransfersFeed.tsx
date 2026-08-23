@@ -232,7 +232,7 @@ const TransfersFeed = () => {
     <section>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Live Whale Trades <span className="text-[10px] normal-case tracking-normal">($500K+ · Binance)</span>
+          Live Whale Trades <span className="text-[10px] normal-case tracking-normal">($100K+ · Binance)</span>
         </h2>
         <div className="flex items-center gap-2">
           <button
@@ -267,7 +267,7 @@ const TransfersFeed = () => {
                   <td colSpan={6} className="py-8 text-center text-xs font-mono text-muted-foreground">
                     {error
                       ? `Feed error: ${error}`
-                      : "No $500K+ trades detected in the last window — waiting for whales..."}
+                      : "No $100K+ trades detected in the last window — waiting for whales..."}
                   </td>
                 </tr>
               ) : (
