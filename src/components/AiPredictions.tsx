@@ -165,6 +165,24 @@ const AiPredictions = ({ predictions = [], loading, error, onRefresh }: AiPredic
                   <span className={`text-[11px] font-mono font-bold ${colors.text}`}>{pred.confidence}%</span>
                 </div>
 
+                {/* Trade levels */}
+                {(pred.entry || pred.stopLoss || pred.timeframe) && (
+                  <div className="grid grid-cols-3 gap-1.5 mb-2 text-center">
+                    <div className="bg-secondary/30 rounded px-1 py-1.5">
+                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground">Entry</div>
+                      <div className="text-[10px] font-mono font-semibold text-foreground">{pred.entry ?? pred.current}</div>
+                    </div>
+                    <div className="bg-secondary/30 rounded px-1 py-1.5">
+                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground">Stop</div>
+                      <div className="text-[10px] font-mono font-semibold text-loss">{pred.stopLoss ?? "—"}</div>
+                    </div>
+                    <div className="bg-secondary/30 rounded px-1 py-1.5">
+                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground">Horizon</div>
+                      <div className="text-[10px] font-mono font-semibold text-foreground">{pred.timeframe ?? "—"}</div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Reasoning */}
                 <p className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t border-border/50 line-clamp-3">
                   {pred.reasoning}
