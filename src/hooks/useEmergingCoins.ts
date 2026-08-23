@@ -7,6 +7,7 @@ export interface EmergingCoin {
   name: string;
   image: string;
   price: number;
+  change1h: number | null;
   change24h: number;
   change7d: number;
   marketCap: number;
@@ -16,6 +17,8 @@ export interface EmergingCoin {
   reason: string;
   risk: "LOW" | "MEDIUM" | "HIGH";
   trending: boolean;
+  verified: boolean;
+  verificationNote: string | null;
 }
 
 export function useEmergingCoins(autoRefreshMs = 300000) {
@@ -26,6 +29,7 @@ export function useEmergingCoins(autoRefreshMs = 300000) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [dataAsOf, setDataAsOf] = useState<Date | null>(null);
   const hasFetched = useRef(false);
 
   const fetchGems = useCallback(async () => {
@@ -40,6 +44,7 @@ export function useEmergingCoins(autoRefreshMs = 300000) {
       setFallback(!!data.fallback);
       setScannedCount(data.scannedCount ?? 0);
       setLastUpdated(new Date());
+      setDataAsOf(data.dataAsOf ? new Date(data.dataAsOf) : null);
     } catch (err) {
       console.error("Emerging coins error:", err);
       setError(err instanceof Error ? err.message : "Failed to scan for emerging coins");
