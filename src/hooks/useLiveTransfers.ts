@@ -10,6 +10,12 @@ export interface LargeTrade {
   usd: number;
   side: "BUY" | "SELL";
   time: number;
+  aggTradeId?: number;
+  firstTradeId?: number;
+  lastTradeId?: number;
+  fillCount?: number;
+  isBuyerMaker?: boolean;
+  exchange?: string;
 }
 
 export function useLiveTransfers(refreshInterval = 15000) {
