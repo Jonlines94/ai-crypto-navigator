@@ -8,6 +8,17 @@ const corsHeaders = {
 };
 
 const BINANCE_BASE = "https://api.binance.com";
+// Unrestricted public market-data host (no geo block)
+const MARKET_DATA_BASE = "https://data-api.binance.vision";
+// Fallback hosts for signed endpoints
+const SIGNED_HOSTS = [
+  "https://api.binance.com",
+  "https://api-gcp.binance.com",
+  "https://api1.binance.com",
+  "https://api2.binance.com",
+  "https://api3.binance.com",
+  "https://api4.binance.com",
+];
 
 async function hmacSign(queryString: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
