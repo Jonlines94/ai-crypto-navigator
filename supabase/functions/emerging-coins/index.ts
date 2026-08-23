@@ -390,7 +390,7 @@ Respond ONLY by calling the provided tool.`;
         `Verify these draft picks against the fresh data (as of ${dataAsOf}):\n\n` +
         gems.map((g) => {
           const c = bySymbol.get(g.symbol)!;
-          return `PICK: ${coinLine(c)}\n  claim (score ${g.potentialScore}): ${g.reason}`;
+          return `PICK: ${coinLine(c, withTech(c))}\n  claim (score ${g.potentialScore}): ${g.reason}`;
         }).join("\n\n"),
         {
           type: "function",
