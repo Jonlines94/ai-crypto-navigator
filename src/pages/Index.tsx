@@ -190,7 +190,7 @@ const Index = () => {
   }, [botActive]);
   return (
     <div className="min-h-screen bg-background">
-      <Header activeTab={activeTab} onNavigate={setActiveTab} />
+      <Header />
       <TickerBar coins={coins} loading={coinsLoading} />
 
       {/* Tab Navigation */}
