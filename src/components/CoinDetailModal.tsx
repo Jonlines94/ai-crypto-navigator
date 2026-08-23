@@ -85,6 +85,7 @@ const ChangeBadge = ({ label, value }: { label: string; value: number }) => {
 const CoinDetailModal = ({ coinId, predictions = [], onClose }: CoinDetailModalProps) => {
   const [detail, setDetail] = useState<CoinDetail | null>(null);
   const [chart, setChart] = useState<{ t: number; p: number }[]>([]);
+  const [markets, setMarkets] = useState<MarketListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +105,9 @@ const CoinDetailModal = ({ coinId, predictions = [], onClose }: CoinDetailModalP
         setDetail(data.detail);
         if (Array.isArray(data.chart)) {
           setChart(data.chart.map(([t, p]: [number, number]) => ({ t, p })));
+        }
+        if (Array.isArray(data.markets)) {
+          setMarkets(data.markets);
         }
       } catch (err) {
         console.error("Coin detail error:", err);
