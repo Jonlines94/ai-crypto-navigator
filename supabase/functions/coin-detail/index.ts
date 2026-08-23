@@ -46,11 +46,12 @@ serve(async (req) => {
       });
     }
 
-    const [coinRes, chartRes] = await Promise.all([
+    const [coinRes, chartRes, tickerRes] = await Promise.all([
       cgFetch(
         `${CG}/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false`
       ),
       cgFetch(`${CG}/coins/${id}/market_chart?vs_currency=usd&days=7`).catch(() => null),
+      cgFetch(`${CG}/coins/${id}/tickers?include_exchange_logo=true&page=1&depth=false&order=volume_desc`).catch(() => null),
     ]);
 
     const c = await coinRes.json();
