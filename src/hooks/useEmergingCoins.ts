@@ -61,5 +61,5 @@ export function useEmergingCoins(autoRefreshMs = 300000) {
     return () => clearInterval(interval);
   }, [fetchGems, autoRefreshMs]);
 
-  return { gems, outlook, fallback, scannedCount, loading, error, lastUpdated, refresh: fetchGems };
+  return { gems, outlook, fallback, scannedCount, loading, error, lastUpdated, dataAsOf, refresh: fetchGems };
 }
