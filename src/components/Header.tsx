@@ -1,6 +1,13 @@
 import { Search, Brain } from "lucide-react";
 
-const Header = () => (
+type Tab = "intel" | "gems" | "trading";
+
+interface HeaderProps {
+  activeTab?: Tab;
+  onNavigate?: (tab: Tab) => void;
+}
+
+const Header = ({ activeTab, onNavigate }: HeaderProps) => (
   <header className="border-b border-border bg-card/30 backdrop-blur-sm">
     <div className="max-w-[1440px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
@@ -26,8 +33,26 @@ const Header = () => (
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">Markets</button>
-        <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">Tools</button>
+        <button
+          onClick={() => onNavigate?.("intel")}
+          className={`text-sm transition-colors ${
+            activeTab === "intel" || activeTab === "gems"
+              ? "text-foreground font-medium"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Markets
+        </button>
+        <button
+          onClick={() => onNavigate?.("trading")}
+          className={`text-sm transition-colors ${
+            activeTab === "trading"
+              ? "text-foreground font-medium"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Tools
+        </button>
         <button className="text-sm bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
           Connect
         </button>
