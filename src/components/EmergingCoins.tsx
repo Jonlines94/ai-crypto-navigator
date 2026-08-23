@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Gem, RefreshCw, AlertCircle, Flame, TrendingUp, TrendingDown, Radar, ShieldAlert } from "lucide-react";
+import { Gem, RefreshCw, AlertCircle, Flame, TrendingUp, TrendingDown, Radar, ShieldAlert, BadgeCheck, Clock } from "lucide-react";
 import type { EmergingCoin } from "@/hooks/useEmergingCoins";
 import { formatPrice, formatMarketCap } from "@/hooks/useCryptoData";
 
@@ -11,6 +11,7 @@ interface EmergingCoinsProps {
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
+  dataAsOf: Date | null;
   onRefresh: () => void;
 }
 
@@ -36,7 +37,8 @@ const ChangeBadge = ({ value, label }: { value: number; label: string }) => (
   </div>
 );
 
-const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, error, lastUpdated, onRefresh }: EmergingCoinsProps) => {
+const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, error, lastUpdated, dataAsOf, onRefresh }: EmergingCoinsProps) => {
+  const verifiedCount = gems.filter(g => g.verified).length;
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
