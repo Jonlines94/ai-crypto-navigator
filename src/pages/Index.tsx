@@ -274,6 +274,7 @@ const Index = () => {
             loading={gemsLoading}
             error={gemsError}
             lastUpdated={gemsUpdated}
+            dataAsOf={gemsDataAsOf}
             onRefresh={refreshGems}
           />
         ) : (
