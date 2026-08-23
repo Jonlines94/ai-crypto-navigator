@@ -84,49 +84,16 @@ const CoinDetailModal = ({ coinId, predictions = [], onClose }: CoinDetailModalP
       setLoading(true);
       setError(null);
       try {
-        const [coinRes, chartRes] = await Promise.all([
-          fetch(
-            `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false`
-          ),
-          fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=7`),
-        ]);
-        if (!coinRes.ok) throw new Error(`CoinGecko ${coinRes.status}`);
-        const c = await coinRes.json();
-        const md = c.market_data;
+        const { data, error: fnError } = await supabase.functions.invoke("coin-detail", {
+          body: { id: coinId },
+        });
+        if (fnError) throw new Error(fnError.message);
+        if (data?.error) throw new Error(data.error);
         if (cancelled) return;
 
-        setDetail({
-          name: c.name,
-          symbol: String(c.symbol).toUpperCase(),
-          image: c.image?.large || c.image?.small,
-          rank: c.market_cap_rank ?? null,
-          price: md?.current_price?.usd ?? 0,
-          change1h: md?.price_change_percentage_1h_in_currency?.usd ?? 0,
-          change24h: md?.price_change_percentage_24h ?? 0,
-          change7d: md?.price_change_percentage_7d ?? 0,
-          change30d: md?.price_change_percentage_30d ?? 0,
-          marketCap: md?.market_cap?.usd ?? 0,
-          fdv: md?.fully_diluted_valuation?.usd ?? 0,
-          volume: md?.total_volume?.usd ?? 0,
-          high24h: md?.high_24h?.usd ?? 0,
-          low24h: md?.low_24h?.usd ?? 0,
-          ath: md?.ath?.usd ?? 0,
-          athChange: md?.ath_change_percentage?.usd ?? 0,
-          atl: md?.atl?.usd ?? 0,
-          atlChange: md?.atl_change_percentage?.usd ?? 0,
-          circulating: md?.circulating_supply ?? 0,
-          totalSupply: md?.total_supply ?? null,
-          maxSupply: md?.max_supply ?? null,
-          description: String(c.description?.en || "").replace(/<[^>]*>/g, "").split(". ").slice(0, 3).join(". "),
-          homepage: c.links?.homepage?.find((h: string) => h) || null,
-          explorer: c.links?.blockchain_site?.find((h: string) => h) || null,
-        });
-
-        if (chartRes.ok) {
-          const ch = await chartRes.json();
-          if (!cancelled && Array.isArray(ch?.prices)) {
-            setChart(ch.prices.map(([t, p]: [number, number]) => ({ t, p })));
-          }
+        setDetail(data.detail);
+        if (Array.isArray(data.chart)) {
+          setChart(data.chart.map(([t, p]: [number, number]) => ({ t, p })));
         }
       } catch (err) {
         console.error("Coin detail error:", err);
