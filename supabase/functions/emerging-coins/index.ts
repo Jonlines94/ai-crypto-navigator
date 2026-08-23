@@ -277,14 +277,15 @@ serve(async (req) => {
 
     const pickPrompt = `You are an elite crypto analyst specializing in EARLY-STAGE and UP-AND-COMING coins — small and mid caps with real breakout potential BEFORE the crowd arrives.
 
-You are given pre-screened candidates (ranks ~100-400, market cap $10M-$2B, >$1M daily volume) with FRESH data refetched seconds ago: price, 1h/24h/7d momentum, volume/turnover, and trending status.
+You are given pre-screened candidates (ranks ~100-400, market cap $10M-$2B, >$1M daily volume) with FRESH data refetched seconds ago: price, 1h/24h/7d momentum, volume/turnover, trending status, and — where a Binance USDT pair exists — live 1h technicals (RSI, MACD histogram direction and slope, EMA trend, volume ratio vs average).
 
 SELECTION FRAMEWORK:
-1. VOLUME/TURNOVER: Rising volume vs market cap = smart money accumulating. High turnover (>15%) on a small cap is a strong early signal.
+1. VOLUME/TURNOVER: Rising volume vs market cap = smart money accumulating. High turnover (>15%) on a small cap is a strong early signal. Binance volume ratio >= 1.3x confirms the interest is happening NOW.
 2. MOMENTUM QUALITY: Prefer coins up 1-10% over 24h with a positive 7d trend (early breakout) OVER coins already up 30%+ (you're late). A small pullback in a 7d uptrend can be a good entry. Use the 1h change to confirm the move is still alive RIGHT NOW.
-3. TRENDING SIGNALS: CoinGecko trending status = retail attention arriving — bullish for small caps if momentum is fresh.
-4. AVOID: overextended pumps (24h >20% AND 7d >50%), dead volume, and anything that looks like pure hype with no liquidity.
-5. RISK HONESTY: smaller market cap = higher risk. Score potential and assign risk truthfully.
+3. TECHNICAL CONFIRMATION: When Binance 1h data is present, it must support the thesis — the strongest picks have 1h trend UP with a POSITIVE, rising MACD. Avoid picks where MACD is negative and fading with trend DOWN unless this is a confirmed oversold bounce (RSI < 35 with MACD rising).
+4. TRENDING SIGNALS: CoinGecko trending status = retail attention arriving — bullish for small caps if momentum is fresh.
+5. AVOID: overextended pumps (24h >20% AND 7d >50%), dead volume, and anything that looks like pure hype with no liquidity.
+6. RISK HONESTY: smaller market cap = higher risk. Score potential and assign risk truthfully.
 
 Pick the 6-10 BEST opportunities. For each: a potential score (50-98, where 90+ = exceptional setup), a specific 1-2 sentence reason citing the actual fresh numbers, and a risk rating (LOW >$500M mcap, MEDIUM $100M-$500M, HIGH <$100M).
 
@@ -378,8 +379,8 @@ Respond ONLY by calling the provided tool.`;
     const verifyPrompt = `You are a strict verification AI. Another analyst made draft picks of up-and-coming crypto coins. Your job is to VERIFY each pick against the FRESH market data (refetched seconds ago) — catch stale theses, contradicted momentum, or exaggerated claims.
 
 For each pick:
-- Check the reason against the ACTUAL fresh numbers (price, 1h/24h/7d change, turnover, volume). If the numbers contradict the thesis (e.g. "accumulation" but 1h is dumping, or "fresh momentum" but 24h is +25%), mark verified=false and explain.
-- Adjust the score up or down (max ±10) if the fresh data warrants it.
+- Check the reason against the ACTUAL fresh numbers (price, 1h/24h/7d change, turnover, volume) AND the live Binance 1h technicals when present (RSI, MACD, trend, volume ratio). If the numbers contradict the thesis (e.g. "accumulation" but 1h is dumping with negative fading MACD, or "fresh momentum" but 24h is +25%), mark verified=false and explain.
+- Adjust the score up or down (max ±10) if the fresh data warrants it. Positive rising MACD in an uptrend supports a bump up; negative MACD against the thesis supports a cut.
 - If the thesis holds against the fresh data, mark verified=true with a short confirmation note citing the key number.
 
 Respond ONLY by calling the provided tool.`;
