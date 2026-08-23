@@ -57,6 +57,14 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
               </span>
             </div>
           )}
+          {verifiedCount > 0 && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gain/10 border border-gain/20">
+              <BadgeCheck className="w-3 h-3 text-gain" />
+              <span className="text-[10px] font-mono text-gain font-semibold">
+                {verifiedCount}/{gems.length} AI VERIFIED
+              </span>
+            </div>
+          )}
           {fallback && (
             <span className="text-[10px] font-mono text-warning px-2 py-1 rounded-full bg-warning/10 border border-warning/20">
               HEURISTIC MODE
@@ -64,9 +72,10 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
           )}
         </div>
         <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span className="text-[10px] font-mono text-muted-foreground hidden sm:block">
-              {lastUpdated.toLocaleTimeString()}
+          {dataAsOf && (
+            <span className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground hidden sm:flex">
+              <Clock className="w-3 h-3" />
+              Data as of {dataAsOf.toLocaleTimeString()}
             </span>
           )}
           <button
@@ -75,7 +84,7 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            {loading ? "Scanning..." : "Rescan"}
+            {loading ? "Verifying..." : "Rescan"}
           </button>
         </div>
       </div>
