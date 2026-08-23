@@ -46,11 +46,12 @@ serve(async (req) => {
       });
     }
 
-    const [coinRes, chartRes] = await Promise.all([
+    const [coinRes, chartRes, tickerRes] = await Promise.all([
       cgFetch(
         `${CG}/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false`
       ),
       cgFetch(`${CG}/coins/${id}/market_chart?vs_currency=usd&days=7`).catch(() => null),
+      cgFetch(`${CG}/coins/${id}/tickers?include_exchange_logo=true&page=1&depth=false&order=volume_desc`).catch(() => null),
     ]);
 
     const c = await coinRes.json();
@@ -60,6 +61,34 @@ serve(async (req) => {
     if (chartRes) {
       const ch = await chartRes.json();
       if (Array.isArray(ch?.prices)) chart = ch.prices;
+    }
+
+    // Top markets/exchanges where this coin trades (deduped per exchange+pair)
+    let markets: unknown[] = [];
+    if (tickerRes) {
+      const tk = await tickerRes.json();
+      if (Array.isArray(tk?.tickers)) {
+        const seen = new Set<string>();
+        markets = tk.tickers
+          .filter((t: Record<string, unknown>) => {
+            const ex = (t.market as Record<string, unknown>)?.name ?? "";
+            const pair = `${t.base}/${t.target}`;
+            const key = `${ex}:${pair}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return num((t.converted_volume as Record<string, unknown>)?.usd) > 0;
+          })
+          .slice(0, 10)
+          .map((t: Record<string, unknown>) => ({
+            exchange: (t.market as Record<string, unknown>)?.name ?? "Unknown",
+            exchangeLogo: (t.market as Record<string, unknown>)?.logo ?? null,
+            pair: `${t.base}/${t.target}`,
+            price: num((t.converted_last as Record<string, unknown>)?.usd ?? t.last),
+            volume: num((t.converted_volume as Record<string, unknown>)?.usd),
+            trustScore: t.trust_score ?? null,
+            tradeUrl: t.trade_url ?? null,
+          }));
+      }
     }
 
     const detail = {
@@ -93,7 +122,7 @@ serve(async (req) => {
       explorer: (c.links?.blockchain_site || []).find((h: string) => h) || null,
     };
 
-    return new Response(JSON.stringify({ detail, chart }), {
+    return new Response(JSON.stringify({ detail, chart, markets }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
