@@ -103,6 +103,36 @@ serve(async (req) => {
           .sort((a:any,b:any)=>parseFloat(b.volume)-parseFloat(a.volume)); break;
       }
       case "price": result=await binanceReq("GET","/api/v3/ticker/price",params||{}); break;
+      case "large_trades": {
+        const pairs = params?.symbols ? String(params.symbols).split(",") : ["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT","DOGEUSDT","ADAUSDT","LINKUSDT"];
+        const minUsd = parseFloat(params?.minUsd || "50000");
+        const settled = await Promise.allSettled(
+          pairs.map((sym) => binanceReq("GET", "/api/v3/aggTrades", { symbol: sym, limit: "1000" }))
+        );
+        const out: any[] = [];
+        settled.forEach((res, i) => {
+          if (res.status !== "fulfilled") return;
+          const sym = pairs[i];
+          for (const t of res.value as any[]) {
+            const usd = parseFloat(t.p) * parseFloat(t.q);
+            if (usd >= minUsd) {
+              out.push({
+                id: `${sym}-${t.a}`,
+                symbol: sym,
+                base: sym.replace(/USDT$/, ""),
+                price: parseFloat(t.p),
+                quantity: parseFloat(t.q),
+                usd,
+                side: t.m ? "SELL" : "BUY", // m=true => buyer is maker => taker sold
+                time: t.T,
+              });
+            }
+          }
+        });
+        out.sort((a, b) => b.time - a.time);
+        result = out.slice(0, 40);
+        break;
+      }
       case "klines": {
         if(!params?.symbol) throw new Error("Missing symbol");
         result=await binanceReq("GET","/api/v3/klines",{symbol:params.symbol,interval:params.interval||"1h",limit:params.limit||"50"}); break;
