@@ -8,12 +8,14 @@ import AiPredictions from "@/components/AiPredictions";
 import ExchangeFlows from "@/components/ExchangeFlows";
 import TransfersFeed from "@/components/TransfersFeed";
 import TradingDashboard from "@/components/TradingDashboard";
+import EmergingCoins from "@/components/EmergingCoins";
 import Footer from "@/components/Footer";
 import { useCryptoData } from "@/hooks/useCryptoData";
 import { useAiPredictions } from "@/hooks/useAiPredictions";
 import { useBinance } from "@/hooks/useBinance";
 import { useTradeSignals } from "@/hooks/useTradeSignals";
-import { Bot, BarChart3 } from "lucide-react";
+import { useEmergingCoins } from "@/hooks/useEmergingCoins";
+import { Bot, BarChart3, Gem } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -37,7 +39,12 @@ const Index = () => {
     settings, tradeHistory, updateSettings, generateSignals, updateSignalStatus, openTrade, closeTrade, getMaxTradeAmount, clearAllData,
   } = useTradeSignals(handleAutoClose);
 
-  const [activeTab, setActiveTab] = useState<"intel" | "trading">("intel");
+  const {
+    gems, outlook: gemsOutlook, fallback: gemsFallback, scannedCount,
+    loading: gemsLoading, error: gemsError, lastUpdated: gemsUpdated, refresh: refreshGems,
+  } = useEmergingCoins();
+
+  const [activeTab, setActiveTab] = useState<"intel" | "gems" | "trading">("intel");
   const [botActive, setBotActive] = useState(false);
   const botIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const signalsRef = useRef(signals);
@@ -199,6 +206,17 @@ const Index = () => {
             >
               <BarChart3 className="w-4 h-4" />
               Market Intel
+            </button>
+            <button
+              onClick={() => setActiveTab("gems")}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === "gems"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Gem className="w-4 h-4" />
+              Up &amp; Coming
             </button>
             <button
               onClick={() => setActiveTab("trading")}
