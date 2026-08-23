@@ -312,8 +312,8 @@ const TradingDashboard = ({
       {/* Active Trades - Live P&L */}
       {activeTrades.length > 0 && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="p-4 border-b border-border flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
               <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
                 Open Positions ({activeTrades.length})
@@ -358,15 +358,15 @@ const TradingDashboard = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 sm:gap-6 flex-wrap justify-end">
                     {/* Current Price */}
-                    <div className="text-right">
+                    <div className="text-right hidden sm:block">
                       <div className="text-xs text-muted-foreground">Current</div>
                       <div className="text-sm font-mono font-semibold text-foreground">{fmtPrice(trade.currentPrice)}</div>
                     </div>
 
                     {/* P&L */}
-                    <div className="text-right min-w-[100px]">
+                    <div className="text-right min-w-[70px] sm:min-w-[100px]">
                       <div className={`text-sm font-mono font-bold ${trade.pnl >= 0 ? "text-gain" : "text-loss"}`}>
                         {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                       </div>
@@ -481,7 +481,7 @@ const TradingDashboard = ({
       </div>
 
       {/* Market Outlook + Generate */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           {marketOutlook && (
             <p className="text-sm text-muted-foreground italic">📊 {marketOutlook}</p>

@@ -189,7 +189,7 @@ const Index = () => {
     return () => { if (botIntervalRef.current) clearInterval(botIntervalRef.current); };
   }, [botActive]);
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Header predictions={predictions} />
       <TickerBar coins={coins} loading={coinsLoading} />
 
