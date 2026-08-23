@@ -100,7 +100,7 @@ const AiPredictions = ({ predictions = [], loading, error, onRefresh }: AiPredic
                 className={`bg-card border rounded-lg p-4 ${colors.border} transition-colors`}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <span className="text-base font-bold text-foreground">{pred.symbol}</span>
                   </div>
@@ -109,6 +109,11 @@ const AiPredictions = ({ predictions = [], loading, error, onRefresh }: AiPredic
                     {pred.action}
                   </div>
                 </div>
+
+                {/* Verdict + timeframe */}
+                {pred.verdict && (
+                  <p className={`text-[11px] font-semibold mb-2 ${colors.text}`}>{pred.verdict}</p>
+                )}
 
                 {/* Prices row */}
                 <div className="flex items-baseline justify-between mb-3">
