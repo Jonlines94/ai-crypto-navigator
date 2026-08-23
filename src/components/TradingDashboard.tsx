@@ -103,7 +103,7 @@ const TradingDashboard = ({
   return (
     <section className="space-y-6">
       {/* Mode Banner */}
-      <div className={`rounded-xl border p-4 flex items-center justify-between ${
+      <div className={`rounded-xl border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${
         settings.mode === "live"
           ? "bg-loss/5 border-loss/30"
           : "bg-primary/5 border-primary/30"

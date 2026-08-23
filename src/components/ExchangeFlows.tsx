@@ -15,44 +15,44 @@ const ExchangeFlows = ({ coins = [], loading }: ExchangeFlowsProps) => (
         <table className="w-full">
           <thead>
             <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
-              <th className="text-left py-3 px-4 font-semibold">#</th>
-              <th className="text-left py-3 px-4 font-semibold">Asset</th>
-              <th className="text-right py-3 px-4 font-semibold">Price</th>
-              <th className="text-right py-3 px-4 font-semibold">24h</th>
-              <th className="text-right py-3 px-4 font-semibold">Volume</th>
-              <th className="text-right py-3 px-4 font-semibold">Market Cap</th>
+              <th className="text-left py-3 px-2 sm:px-4 font-semibold">#</th>
+              <th className="text-left py-3 px-2 sm:px-4 font-semibold">Asset</th>
+              <th className="text-right py-3 px-2 sm:px-4 font-semibold">Price</th>
+              <th className="text-right py-3 px-2 sm:px-4 font-semibold">24h</th>
+              <th className="text-right py-3 px-4 font-semibold hidden md:table-cell">Volume</th>
+              <th className="text-right py-3 px-4 font-semibold hidden lg:table-cell">Market Cap</th>
             </tr>
           </thead>
           <tbody>
             {loading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-b border-border/50 animate-pulse">
-                    <td className="py-3 px-4"><div className="h-4 w-4 bg-secondary rounded" /></td>
-                    <td className="py-3 px-4"><div className="h-4 w-20 bg-secondary rounded" /></td>
-                    <td className="py-3 px-4"><div className="h-4 w-16 bg-secondary rounded ml-auto" /></td>
-                    <td className="py-3 px-4"><div className="h-4 w-12 bg-secondary rounded ml-auto" /></td>
-                    <td className="py-3 px-4"><div className="h-4 w-16 bg-secondary rounded ml-auto" /></td>
-                    <td className="py-3 px-4"><div className="h-4 w-16 bg-secondary rounded ml-auto" /></td>
+                    <td className="py-3 px-2 sm:px-4"><div className="h-4 w-4 bg-secondary rounded" /></td>
+                    <td className="py-3 px-2 sm:px-4"><div className="h-4 w-20 bg-secondary rounded" /></td>
+                    <td className="py-3 px-2 sm:px-4"><div className="h-4 w-16 bg-secondary rounded ml-auto" /></td>
+                    <td className="py-3 px-2 sm:px-4"><div className="h-4 w-12 bg-secondary rounded ml-auto" /></td>
+                    <td className="py-3 px-4 hidden md:table-cell"><div className="h-4 w-16 bg-secondary rounded ml-auto" /></td>
+                    <td className="py-3 px-4 hidden lg:table-cell"><div className="h-4 w-16 bg-secondary rounded ml-auto" /></td>
                   </tr>
                 ))
               : coins.map((coin, i) => (
                   <tr key={coin.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                    <td className="py-3 px-4 text-xs text-muted-foreground">{i + 1}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2 sm:px-4 text-xs text-muted-foreground">{i + 1}</td>
+                    <td className="py-3 px-2 sm:px-4">
                       <div className="flex items-center gap-2">
-                        <img src={coin.image} alt={coin.name} className="w-5 h-5 rounded-full" />
-                        <span className="text-sm font-semibold text-foreground">{coin.name}</span>
-                        <span className="text-xs text-muted-foreground font-mono">{coin.symbol.toUpperCase()}</span>
+                        <img src={coin.image} alt={coin.name} className="w-5 h-5 rounded-full shrink-0" />
+                        <span className="text-sm font-semibold text-foreground hidden sm:inline">{coin.name}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground sm:text-foreground font-mono sm:font-semibold">{coin.symbol.toUpperCase()}</span>
                       </div>
                     </td>
-                    <td className="text-right py-3 px-4 text-sm font-mono text-foreground">{formatPrice(coin.current_price)}</td>
-                    <td className="text-right py-3 px-4">
-                      <span className={`text-sm font-mono font-semibold ${coin.price_change_percentage_24h >= 0 ? "text-gain" : "text-loss"}`}>
+                    <td className="text-right py-3 px-2 sm:px-4 text-xs sm:text-sm font-mono text-foreground whitespace-nowrap">{formatPrice(coin.current_price)}</td>
+                    <td className="text-right py-3 px-2 sm:px-4">
+                      <span className={`text-xs sm:text-sm font-mono font-semibold whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? "text-gain" : "text-loss"}`}>
                         {coin.price_change_percentage_24h >= 0 ? "+" : ""}{coin.price_change_percentage_24h?.toFixed(2)}%
                       </span>
                     </td>
-                    <td className="text-right py-3 px-4 text-sm font-mono text-muted-foreground">{formatVolume(coin.total_volume)}</td>
-                    <td className="text-right py-3 px-4 text-sm font-mono text-muted-foreground">{formatVolume(coin.market_cap)}</td>
+                    <td className="text-right py-3 px-4 text-sm font-mono text-muted-foreground hidden md:table-cell">{formatVolume(coin.total_volume)}</td>
+                    <td className="text-right py-3 px-4 text-sm font-mono text-muted-foreground hidden lg:table-cell">{formatVolume(coin.market_cap)}</td>
                   </tr>
                 ))}
           </tbody>
