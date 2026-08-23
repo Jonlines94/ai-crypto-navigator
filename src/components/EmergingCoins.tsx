@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Gem, RefreshCw, AlertCircle, Flame, TrendingUp, TrendingDown, Radar, ShieldAlert } from "lucide-react";
+import { Gem, RefreshCw, AlertCircle, Flame, TrendingUp, TrendingDown, Radar, ShieldAlert, BadgeCheck, Clock } from "lucide-react";
 import type { EmergingCoin } from "@/hooks/useEmergingCoins";
 import { formatPrice, formatMarketCap } from "@/hooks/useCryptoData";
 
@@ -11,6 +11,7 @@ interface EmergingCoinsProps {
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
+  dataAsOf: Date | null;
   onRefresh: () => void;
 }
 
@@ -36,7 +37,8 @@ const ChangeBadge = ({ value, label }: { value: number; label: string }) => (
   </div>
 );
 
-const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, error, lastUpdated, onRefresh }: EmergingCoinsProps) => {
+const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, error, lastUpdated, dataAsOf, onRefresh }: EmergingCoinsProps) => {
+  const verifiedCount = gems.filter(g => g.verified).length;
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -55,6 +57,14 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
               </span>
             </div>
           )}
+          {verifiedCount > 0 && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gain/10 border border-gain/20">
+              <BadgeCheck className="w-3 h-3 text-gain" />
+              <span className="text-[10px] font-mono text-gain font-semibold">
+                {verifiedCount}/{gems.length} AI VERIFIED
+              </span>
+            </div>
+          )}
           {fallback && (
             <span className="text-[10px] font-mono text-warning px-2 py-1 rounded-full bg-warning/10 border border-warning/20">
               HEURISTIC MODE
@@ -62,9 +72,10 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
           )}
         </div>
         <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span className="text-[10px] font-mono text-muted-foreground hidden sm:block">
-              {lastUpdated.toLocaleTimeString()}
+          {dataAsOf && (
+            <span className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground hidden sm:flex">
+              <Clock className="w-3 h-3" />
+              Data as of {dataAsOf.toLocaleTimeString()}
             </span>
           )}
           <button
@@ -73,7 +84,7 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            {loading ? "Scanning..." : "Rescan"}
+            {loading ? "Verifying..." : "Rescan"}
           </button>
         </div>
       </div>
@@ -144,6 +155,12 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
                     {gem.potentialScore}
                   </div>
                   <div className="text-[9px] font-mono text-muted-foreground uppercase">Potential</div>
+                  {gem.verified && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-mono font-bold text-gain mt-0.5">
+                      <BadgeCheck className="w-3 h-3" />
+                      VERIFIED
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -163,6 +180,7 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
                   <span className="text-[9px] font-mono text-muted-foreground uppercase block">Price</span>
                   <span className="text-sm font-mono font-semibold text-foreground">{formatPrice(gem.price)}</span>
                 </div>
+                {gem.change1h != null && <ChangeBadge value={gem.change1h} label="1h" />}
                 <ChangeBadge value={gem.change24h} label="24h" />
                 <ChangeBadge value={gem.change7d} label="7d" />
               </div>
@@ -180,7 +198,19 @@ const EmergingCoins = ({ gems = [], outlook, fallback, scannedCount, loading, er
               </div>
 
               {/* AI reason */}
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">{gem.reason}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-2">{gem.reason}</p>
+
+              {/* Verification note */}
+              {gem.verificationNote && (
+                <div className={`flex items-start gap-1.5 mb-3 p-2 rounded border text-[10px] font-mono leading-relaxed ${
+                  gem.verified
+                    ? "bg-gain/5 border-gain/20 text-gain"
+                    : "bg-warning/5 border-warning/20 text-warning"
+                }`}>
+                  <BadgeCheck className="w-3 h-3 shrink-0 mt-0.5" />
+                  <span>{gem.verificationNote}</span>
+                </div>
+              )}
 
               {/* Risk badge */}
               <div className="flex items-center justify-between">

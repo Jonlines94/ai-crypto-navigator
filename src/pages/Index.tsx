@@ -41,7 +41,8 @@ const Index = () => {
 
   const {
     gems, outlook: gemsOutlook, fallback: gemsFallback, scannedCount,
-    loading: gemsLoading, error: gemsError, lastUpdated: gemsUpdated, refresh: refreshGems,
+    loading: gemsLoading, error: gemsError, lastUpdated: gemsUpdated, dataAsOf: gemsDataAsOf,
+    refresh: refreshGems,
   } = useEmergingCoins();
 
   const [activeTab, setActiveTab] = useState<"intel" | "gems" | "trading">("intel");
@@ -273,6 +274,7 @@ const Index = () => {
             loading={gemsLoading}
             error={gemsError}
             lastUpdated={gemsUpdated}
+            dataAsOf={gemsDataAsOf}
             onRefresh={refreshGems}
           />
         ) : (
