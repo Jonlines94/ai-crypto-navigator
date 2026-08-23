@@ -9,6 +9,10 @@ export interface AiPrediction {
   confidence: number;
   target: string;
   current: string;
+  entry?: string;
+  stopLoss?: string;
+  timeframe?: string;
+  verdict?: string;
   reasoning: string;
 }
 
