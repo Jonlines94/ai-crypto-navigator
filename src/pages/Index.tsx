@@ -264,6 +264,17 @@ const Index = () => {
               <TransfersFeed />
             </div>
           </>
+        ) : activeTab === "gems" ? (
+          <EmergingCoins
+            gems={gems}
+            outlook={gemsOutlook}
+            fallback={gemsFallback}
+            scannedCount={scannedCount}
+            loading={gemsLoading}
+            error={gemsError}
+            lastUpdated={gemsUpdated}
+            onRefresh={refreshGems}
+          />
         ) : (
           <TradingDashboard
             signals={signals}
