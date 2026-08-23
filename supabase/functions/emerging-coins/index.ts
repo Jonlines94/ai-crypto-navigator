@@ -172,7 +172,9 @@ serve(async (req) => {
       c.market_cap > 10e6 &&
       c.market_cap < 2e9 &&
       c.total_volume > 1e6 &&
-      c.current_price > 0
+      c.current_price > 0 &&
+      // sanity filter: volume > 50x market cap is a data glitch, not real turnover
+      c.total_volume < c.market_cap * 50
     );
 
     if (candidates.length === 0) {
