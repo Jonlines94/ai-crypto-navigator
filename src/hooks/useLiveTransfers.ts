@@ -10,6 +10,12 @@ export interface LargeTrade {
   usd: number;
   side: "BUY" | "SELL";
   time: number;
+  aggTradeId?: number;
+  firstTradeId?: number;
+  lastTradeId?: number;
+  fillCount?: number;
+  isBuyerMaker?: boolean;
+  exchange?: string;
 }
 
 export function useLiveTransfers(refreshInterval = 15000) {
@@ -22,7 +28,7 @@ export function useLiveTransfers(refreshInterval = 15000) {
   const fetchTrades = useCallback(async () => {
     try {
       const { data, error: fnError } = await supabase.functions.invoke("binance-proxy", {
-        body: { action: "large_trades", params: { minUsd: "50000" } },
+        body: { action: "large_trades", params: { minUsd: "500000" } },
       });
       if (fnError) throw new Error(fnError.message);
       if (!data?.success) throw new Error(data?.error || "Failed to fetch trades");
