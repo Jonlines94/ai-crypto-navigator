@@ -64,6 +64,15 @@ const Index = () => {
     try {
       const tradeValue = parseFloat(signal.estimatedValueUsd?.replace(/[^0-9.]/g, "") || "0");
 
+      // Duplicate position guard — never open two trades on the same symbol
+      if (activeTradesRef.current.some(t => t.symbol === signal.symbol)) {
+        console.log(`[Bot] Skipping ${signal.symbol}: position already open`);
+        toast.info(`⏭️ Skipping ${signal.symbol} — position already open`);
+        updateSignalStatus(signal.id, "rejected");
+        return;
+      }
+
+
       // Budget check — works in BOTH paper and live modes
       const currentSettings = settingsRef.current;
       const totalBalance = accountValueRef.current?.totalUsd || currentSettings.accountBalance;

@@ -34,6 +34,9 @@ export interface ActiveTrade {
   pnlPercent: number;
   openedAt: string;
   paper: boolean;
+  highestPrice?: number;
+  lowestPrice?: number;
+  trailingActive?: boolean;
 }
 
 export interface TradingSettings {
@@ -155,14 +158,41 @@ export function useTradeSignals(onAutoClose?: (trade: ActiveTrade) => void) {
 
             const updatedTrade = { ...trade, currentPrice: cp, pnl: Math.round(pnl * 100) / 100, pnlPercent: Math.round(pnlPercent * 100) / 100 };
 
+            // Trailing stop-loss: once profit passes half the TP distance,
+            // ratchet the SL up (BUY) or down (SELL) to lock in gains
+            const slPct = settingsRef.current.stopLossPct;
+            const tpPct = settingsRef.current.takeProfitPct;
+            const activation = tpPct / 2;
+            if (trade.side === "BUY") {
+              const highest = Math.max(trade.highestPrice ?? trade.entryPrice, cp);
+              updatedTrade.highestPrice = highest;
+              if (updatedTrade.pnlPercent >= activation) {
+                const trailSL = highest * (1 - slPct / 100);
+                if (trailSL > updatedTrade.stopLoss) {
+                  updatedTrade.stopLoss = Math.round(trailSL * 1e8) / 1e8;
+                  updatedTrade.trailingActive = true;
+                }
+              }
+            } else {
+              const lowest = Math.min(trade.lowestPrice ?? trade.entryPrice, cp);
+              updatedTrade.lowestPrice = lowest;
+              if (updatedTrade.pnlPercent >= activation) {
+                const trailSL = lowest * (1 + slPct / 100);
+                if (trailSL < updatedTrade.stopLoss) {
+                  updatedTrade.stopLoss = Math.round(trailSL * 1e8) / 1e8;
+                  updatedTrade.trailingActive = true;
+                }
+              }
+            }
+
             // Check SL/TP auto-close
             if (settingsRef.current.autoCloseOnTarget) {
-              if (trade.side === "BUY") {
-                if (cp >= trade.takeProfit) tradesToClose.push({ trade: updatedTrade, reason: "Take-profit hit ✅" });
-                else if (cp <= trade.stopLoss) tradesToClose.push({ trade: updatedTrade, reason: "Stop-loss hit 🛑" });
+              if (updatedTrade.side === "BUY") {
+                if (cp >= updatedTrade.takeProfit) tradesToClose.push({ trade: updatedTrade, reason: "Take-profit hit ✅" });
+                else if (cp <= updatedTrade.stopLoss) tradesToClose.push({ trade: updatedTrade, reason: updatedTrade.trailingActive ? "Trailing stop locked profit 🔒" : "Stop-loss hit 🛑" });
               } else {
-                if (cp <= trade.takeProfit) tradesToClose.push({ trade: updatedTrade, reason: "Take-profit hit ✅" });
-                else if (cp >= trade.stopLoss) tradesToClose.push({ trade: updatedTrade, reason: "Stop-loss hit 🛑" });
+                if (cp <= updatedTrade.takeProfit) tradesToClose.push({ trade: updatedTrade, reason: "Take-profit hit ✅" });
+                else if (cp >= updatedTrade.stopLoss) tradesToClose.push({ trade: updatedTrade, reason: updatedTrade.trailingActive ? "Trailing stop locked profit 🔒" : "Stop-loss hit 🛑" });
               }
             }
 
