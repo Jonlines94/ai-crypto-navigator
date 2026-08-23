@@ -103,6 +103,10 @@ serve(async (req) => {
           .sort((a:any,b:any)=>parseFloat(b.volume)-parseFloat(a.volume)); break;
       }
       case "price": result=await binanceReq("GET","/api/v3/ticker/price",params||{}); break;
+      case "klines": {
+        if(!params?.symbol) throw new Error("Missing symbol");
+        result=await binanceReq("GET","/api/v3/klines",{symbol:params.symbol,interval:params.interval||"1h",limit:params.limit||"50"}); break;
+      }
       case "ticker": result=await binanceReq("GET","/api/v3/ticker/24hr",params||{}); break;
       case "exchange_info": {
         const info=await binanceReq("GET","/api/v3/exchangeInfo");
